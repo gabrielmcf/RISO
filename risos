@@ -1,13 +1,6 @@
 #!/bin/bash
 
-# --------------------------------------------------------------------------
-# "THE BEER-WARE LICENSE" (Revision 42):
-# <riso@comp.eng.br> wrote this file. As long as you retain this notice
-# you can do whatever you want with this stuff. If we meet some day, and
-# you think this stuff is worth it, you can buy me a beer in return
-# --------------------------------------------------------------------------
-
-#Inclue arquivo com variáveis usadas pelo R.I.S.O.S.
+#Include arquivo com variáveis usadas pelo R.I.S.O.S.
 . /usr/riso/riso.conf
 
 #Inicia tracker para disponibilizar imagens na rede.
