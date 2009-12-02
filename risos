@@ -1,5 +1,5 @@
 #!/bin/bash
-
+#asdf
 #Include arquivo com variáveis usadas pelo R.I.S.O.S.
 . /usr/riso/riso.conf
 
