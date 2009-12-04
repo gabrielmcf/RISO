@@ -52,6 +52,13 @@ instala_linux() {
 baixa_imagens() {
 
 	clear
+	
+	ping -c 3 $servidor
+
+	if [ $? = 1 ]; do
+		echo "O servidor não está ativo ou o computador está sem rede!"
+		return
+	done
 
 	#Deleta imagens antigas.
 	echo "Removendo imagem antiga do windows..."
@@ -95,6 +102,13 @@ baixa_imagem_windows() {
 
 	clear
 
+	ping -c 3 $servidor
+
+	if [ $? = 1 ]; do
+		echo "O servidor não está ativo ou o computador está sem rede!"
+		return
+	done
+
 	#Deleta imagens antigas.
 	echo "Removendo imagem antiga do windows..."
 	rm /usr/riso/imagens/windows.img
@@ -127,6 +141,13 @@ baixa_imagem_windows() {
 baixa_imagem_linux() {
 
 	clear
+
+	ping -c 3 $servidor
+
+	if [ $? = 1 ]; do
+		echo "O servidor não está ativo ou o computador está sem rede!"
+		return
+	done
 
 	#Deleta imagens antigas.
 	echo "Removendo imagem antiga do linux..."
@@ -185,6 +206,13 @@ instala_rec() {
 #Baixa imagem do SO com o R.I.S.O.. 
 baixa_rec() {
 
+	ping -c 3 $servidor
+
+	if [ $? = 1 ]; do
+		echo "O servidor não está ativo ou o computador está sem rede!"
+		return
+	done
+
 	#Baixa refaz tabela de partiçao
 	wget $servidor/tab_part
 	dd if=/dev/zero of=/dev/sda bs=512 count=1
@@ -215,6 +243,11 @@ atualiza() {
 	wget 200.131.37.236/riso/riso.conf -O /usr/riso/riso.conf
 	bash /usr/riso/riso
 	exit
+}
+
+pega_ip() {
+	clear
+	dhclient
 }
 
 helpi() {
@@ -297,9 +330,10 @@ menu() {
 			1 'Instalar imagens ja existentes'                  \
 			2 'Baixar e instalar novas imagens'                 \
 			3 'Baixar e instalar imagem de recuperação(LIVE_CD)'\
-			4 'Atualiza'                                        \
-			5 'Creditos'                                        \
-			6 'Help'                                            )
+			4 'Pegar IP'					    \ 
+			5 'Atualiza'                                        \
+			6 'Creditos'                                        \
+			7 'Help'                                            )
 	
 		# ESC, sai do programa...
 		[ $? -ne 0 ] && break
@@ -309,9 +343,10 @@ menu() {
 		1) menu_instala_imagens;;
 		2) menu_baixa_imagens;;
 		3) baixa_rec; instala_rec;;
-		4) atualiza;;
-		5) creditos;;
-		6) helpi;;
+		4) pega_ip;;
+		5) atualiza;;
+		6) creditos;;
+		7) helpi;;
 	esac	
 
 	done
