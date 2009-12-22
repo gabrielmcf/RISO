@@ -1,5 +1,5 @@
 #Makefile do RISO
-RISOLOCATION := /usr/riso		#Local dos scripts
+RISOLOCATION := /usr/riso/		#Local dos scripts
 BINLOCATION := /usr/bin			#Local do atalho
 
 install: src/riso src/risos conf/riso.conf
