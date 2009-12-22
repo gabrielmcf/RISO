@@ -1,0 +1,452 @@
+#!/bin/bash
+
+#Inclue arquivo com variáveis usadas pelo R.I.S.O.
+. /usr/riso/riso.conf
+
+#Instala imagens do Linux e do Windows.
+instala() {
+	#Desmonta partiçoes.
+	umount $partwindows
+	umount $partlinux
+
+	#Clona windows.
+	ntfsclone -r /usr/riso/imagens/windows.img -O $partwindows
+
+	#Clona linux.
+	mkfs.ext3 $partlinux
+	mount $partlinux /mnt
+	cd /mnt
+	tar -xvf /usr/riso/imagens/linux.tar
+	cd ..
+	umount /mnt
+	reboot
+}
+
+#Instala imagem do Windows.
+instala_windows() {
+	#Desmonta partiçoes
+	umount $partwindows
+
+	#Clona windows
+	ntfsclone -r /usr/riso/imagens/windows.img -O $partwindows
+
+	reboot
+}
+
+#Instala imagem do Linux.
+instala_linux() {
+	#desmonta partiçoes.
+	umount $partlinux
+
+	#clona linux
+	mkfs.ext3 $partlinux
+	mount $partlinux /mnt
+	cd /mnt
+	tar -xvf /usr/riso/imagens/linux.tar
+	cd ..
+	umount /mnt
+	reboot
+}
+
+#Baixa imagens do Linux e do Windows.
+baixa_imagens() {
+
+	clear
+	
+	ping -c 3 $servidor
+
+	if [ $? = 1 ]; do
+		echo "O servidor não está ativo ou o computador está sem rede!"
+		return
+	done
+
+	#Deleta imagens antigas.
+	echo "Removendo imagem antiga do windows..."
+	rm /usr/riso/imagens/windows.img
+	echo "Removendo imagem antiga do linux..."
+	rm /usr/riso/imagens/linux.tar
+	rm /usr/riso/imagens/linux.tar.torrent
+	rm /usr/riso/imagens/windows.img.torrent
+	
+
+	#Baixa novas imagens.
+	wget http://$servidor/windows.img.torrent -O /usr/riso/imagens/windows.img.torrent
+	wget http://$servidor/linux.tar.torrent -O /usr/riso/imagens/linux.tar.torrent	
+	
+	cd /usr/riso/imagens/
+	screen -d -m rtorrent windows.img.torrent linux.tar.torrent
+
+	#Baixa arquivo de configuraçao atualizado.
+	wget http://$servidor/riso.conf -O /usr/riso/riso.conf
+
+	echo "Baixando imagens..."
+	# Loop que aguarda o torrent ser concluido.
+	# Compara o tamanho do arquivo que esta sendo baixado pelo rtorrent
+	# com o tamanho total no arquivo riso.conf.
+	sizelocwin="0"
+	sizeloclin="0"
+	sizeimgwin=`cat /usr/riso/riso.conf | grep tamwindows | cut -d'=' -f2`
+	sizeimglin=`cat /usr/riso/riso.conf | grep tamlinux | cut -d'=' -f2`
+	while [ $sizelocwin != $sizeimgwin -o $sizeloclin != $sizeimglin ]; do
+		sleep 2m
+		sizelocwin=`du /usr/riso/imagens/windows.img | cut -f1`
+		sizeloclin=`du /usr/riso/imagens/linux.tar | cut -f1`
+	done
+
+	#Finaliza download
+	killall rtorrent
+}
+
+#baixa imagem do Windows.
+baixa_imagem_windows() {
+
+	clear
+
+	ping -c 3 $servidor
+
+	if [ $? = 1 ]; do
+		echo "O servidor não está ativo ou o computador está sem rede!"
+		return
+	done
+
+	#Deleta imagens antigas.
+	echo "Removendo imagem antiga do windows..."
+	rm /usr/riso/imagens/windows.img
+
+	#Baixa novas imagens.
+	wget http://$servidor/windows.img.torrent -O /usr/riso/imagens/windows.img.torrent	
+	
+	cd /usr/riso/imagens/
+	screen -d -m rtorrent windows.img.torrent
+
+	#Baixa arquivo de configuraçao atualizado.
+	wget http://$servidor/riso.conf -O /usr/riso/riso.conf
+
+	echo "Baixando imagens..."
+	# Loop que aguarda o torrent ser concluido.
+	# Compara o tamanho do arquivo que esta sendo baixado pelo rtorrent
+	# com o tamanho total no arquivo riso.conf.
+	sizelocwin="0"
+	sizeimgwin=`cat /usr/riso/riso.conf | grep tamwindows | cut -d'=' -f2`
+	while [ $sizelocwin != $sizeimgwin ]; do
+		sleep 2m
+		sizelocwin=`du /usr/riso/imagens/windows.img | cut -f1`
+	done
+
+	#Finaliza download
+	killall rtorrent
+}
+
+#Baixa imagem linux.
+baixa_imagem_linux() {
+
+	clear
+
+	ping -c 3 $servidor
+
+	if [ $? = 1 ]; do
+		echo "O servidor não está ativo ou o computador está sem rede!"
+		return
+	done
+
+	#Deleta imagens antigas.
+	echo "Removendo imagem antiga do linux..."
+	rm /usr/riso/imagens/linux.tar
+	rm /usr/riso/imagens/linux.tar.torrent
+	rm /usr/riso/imagens/windows.img.torrent
+	
+
+	#Baixa novas imagens.
+	wget http://$servidor/linux.tar.torrent -O /usr/riso/imagens/linux.tar.torrent	
+	
+	cd /usr/riso/imagens/
+	screen -d -m rtorrent linux.tar.torrent
+
+	#Baixa arquivo de configuraçao atualizado.
+	wget http://$servidor/riso.conf -O /usr/riso/riso.conf
+
+	echo "Baixando imagens..."
+	# Loop que aguarda o torrent ser concluido.
+	# Compara o tamanho do arquivo que esta sendo baixado pelo rtorrent
+	# com o tamanho total no arquivo riso.conf.
+	sizeloclin="0"
+	sizeimglin=`cat /usr/riso/riso.conf | grep tamlinux | cut -d'=' -f2`
+	while [ $sizeloclin != $sizeimglin ]; do
+		sleep 2m
+
+		sizeloclin=`du /usr/riso/imagens/linux.tar | cut -f1`
+	done
+
+	#Finaliza download
+	killall rtorrent
+}
+
+#Instala imagem do SO com o R.I.S.O..
+instala_rec() {
+
+	#Instala imagem
+	tar -xvf rec.tar
+	
+	#instala o grub
+	chroot /sda4 grub-install /dev/sda
+
+	#Verifica se a instalaçao foi concluida con sucesso
+	if [ -e /sda4/vmlinuz ]
+	then
+		reboot
+	else
+		echo " "
+		echo "      ...NOSSA!!!, o script falhou!!!...     "
+		echo "...reinicie o computador e tente outra vez..."
+		echo " "
+	fi
+
+}
+
+#Baixa imagem do SO com o R.I.S.O.. 
+baixa_rec() {
+
+	ping -c 3 $servidor
+
+	if [ $? = 1 ]; do
+		echo "O servidor não está ativo ou o computador está sem rede!"
+		return
+	done
+
+	#Baixa refaz tabela de partiçao
+	wget $servidor/tab_part
+	dd if=/dev/zero of=/dev/sda bs=512 count=1
+	sfdisk -f /dev/sda < tab_part
+
+	#Desmonta partiçoes
+	umount $partwindows 
+	umount $partlinux
+	umount $partrec  
+	umount $partswap
+
+	#Formata partiçoes 
+	mkfs.ext3 $partlinux
+	mkfs.ext3 $partrec
+	mkswap $partswap
+	swapon $partswap
+
+	#Baixa imagem.tar via scp
+	mkdir /sda4
+	mount $partrec /sda4
+	cd /sda4
+	scp root@$servidor:/usr/riso/imagens/rec.tar .
+}
+
+#Atualiza R.I.S.O..
+atualiza() {
+	wget 200.131.37.236/riso/riso -O /usr/riso/riso
+	wget 200.131.37.236/riso/riso.conf -O /usr/riso/riso.conf
+	bash /usr/riso/riso
+	exit
+}
+
+pega_ip() {
+	clear
+	dhclient
+}
+
+helpi() {
+	dialog \
+	--ok-label 'OK' \
+	--title 'Help' \
+	--msgbox '                                       \n
+		Envie um e-mail com suas duvidas e sugestões \n
+		para: "germano@comp.eng.br" e reponderei o   \n
+		mais rápido possível.'                    \
+		0 0
+}
+
+#Pessoas que desenvolveram esse material.
+creditos() {
+	dialog \
+	--ok-label 'OK' \
+	--title 'Creditos' \
+	--msgbox '                                       \n
+		 CENTRO FEDERAL DE EDUCAÇAO TECNOLOGICA  \n
+		        Engenharia da Computaçao         \n
+		                                         \n
+		      Cristiano Goulart Lopes Dias       \n
+		    Vinicius Tinti de Paula Oliveira     \n
+		       Germano Teixeira de Miranda       \n
+		        Gabriel de Souza Brandao         \n
+		         Marcio J. Menezes Jr.           \n
+		    Gabriel Machado de Castro Fonseca    \n
+		                                         \n
+		           www.dgo.cefetmg.br            \n
+		                                         \n'\
+		  0 0
+}
+
+#Checklist de seleção.
+menu_instala_imagens() {
+	opcao=$( dialog --stdout \
+	--ok-label 'Confirmar'   \
+	--checklist 'Quais imagens deseja instalar:' \
+	0 0 0 \
+	Windows '' ON  \
+	Linux '' ON  )
+
+	# De acordo com a opção escolhida, executa funcoes
+	case $opcao in
+		'"Windows"') instala_windows; break;;
+		'"Linux"') instala_linux; break;;
+		'"Windows" "Linux"') instala; break;;
+	esac
+}
+
+#Checklist de seleção.
+menu_baixa_imagens() {
+	opcao=$( dialog --stdout \
+	--ok-label 'Confirmar'   \
+	--checklist 'Quais imagens deseja baixar:' \
+	0 0 0 \
+	Windows '' ON  \
+	Linux '' ON )
+
+	# De acordo com a opção escolhida, executa funcoes
+	case $opcao in
+		'"Windows"') baixa_imagem_windows; instala_windows; break;;
+		'"Linux"') baixa_imagem_linux; instala_linux; break;;
+		'"Windows" "Linux"') baixa_imagens; instala; break;;
+	esac
+}
+
+#Menu principal.
+menu() {
+
+	while : ; do
+	opcao=$(
+		dialog --stdout                                             \
+		--ok-label 'Confirmar'                                      \
+		--cancel-label 'Sair'                                       \
+		--title 'RISO - 0.4'                                        \
+		--menu 'Escolha o que voce quer fazer:'                     \
+			0 0 0                                               \
+			1 'Instalar imagens ja existentes'                  \
+			2 'Baixar e instalar novas imagens'                 \
+			3 'Baixar e instalar imagem de recuperação(LIVE_CD)'\
+			4 'Pegar IP'					    \ 
+			5 'Atualiza'                                        \
+			6 'Creditos'                                        \
+			7 'Help'                                            )
+	
+		# ESC, sai do programa...
+		[ $? -ne 0 ] && break
+	
+		# De acordo com a opção escolhida, executa funçao
+		case $opcao in
+		1) menu_instala_imagens;;
+		2) menu_baixa_imagens;;
+		3) baixa_rec; instala_rec;;
+		4) pega_ip;;
+		5) atualiza;;
+		6) creditos;;
+		7) helpi;;
+	esac	
+
+	done
+}
+
+#Avalia argumentos.
+avaliar_args() {
+
+#Cria vetor com os argumentos recebidos
+# argumento[0] = numero de argumentos passados.
+argumento=($# $@)
+
+	#Verifica se algum arqumento foi passado
+	if [ $# = 0 ]; then
+		return
+	#Mostra help se requisitado
+	elif [ ${argumento[1]} = "--help" ]; then
+		echo "Uso: riso [OPÇÃO] [ARQUIVO]...                        "
+		echo "Baixa e/ou instala imagen(s) do(s) sistema(s) operacional(s)"
+		echo "                                                            "
+		echo "   -baixa, --baixa as imagens sucessoras                    "
+		echo "       windows --imagem do windows                          "
+		echo "       linux --imagem do linux                              "
+		echo "       rec --imagem do sistema de recuperação               "
+		echo "   -instala, --instala as imagens sucessoras                "
+		echo "       windows --imagem do windows                          "
+		echo "       linux --imagem do linux                              "
+		echo "       rec --imagem do sistema de recuperação               "
+		echo "                                                            "
+		echo "A imagem de recuperação(rec) deve ser baixada e/ou instalada"
+		echo "a partir de um SO externo ao HD (Ex: cd de boot).           "
+		echo "                                                            "
+		echo "Exemplo:                                                    "
+		echo "    Baixa imagens do linux e do windows e instala a do linux"
+		echo "      riso -baixa windows linux -instala linux        "
+		echo "                                                            "
+		echo "Comunicar \"bugs\" para <germano@comp.eng.br>               "
+		exit
+	#Tenta executar
+	else
+		#Verifica syntax 
+		for i in $(seq 1 ${argumento[0]}); do
+			if [ ${argumento[$i]} = "-baixa" ]; then
+				escolha="${argumento[$i+1]}${argumento[$i+2]}"
+				case $escolha in
+					"windows") break;;
+					"linux") break;;
+					"rec") break;;
+					"windowslinux") break;;
+					"linuxwindows") break;;
+					*) echo "riso: Syntax ERRO"; echo "Tente \`riso --help\` para mais informações"; break;;
+				esac
+			elif [ ${argumento[$i]} = "-instala" ]; then
+				escolha="${argumento[$i+1]}${argumento[$i+2]}"
+				case $escolha in
+					"windows") break;;
+					"linux") break;;
+					"rec") break;;
+					"windowslinux") break;;
+					"linuxwindows") break;;
+					*) echo "riso: Syntax ERRO"; echo "Tente \`riso --help\` para mais informações"; break;;
+				esac
+			elif [ ${argumento[$i]} = "windows" ]; then
+				continue
+			elif [ ${argumento[$i]} = "linux" ]; then
+				continue
+			elif [ ${argumento[$i]} = "rec" ]; then
+				continue
+			else
+				echo "riso: Syntax ERRO"
+				echo "Tente \`riso --help\` para mais informações"
+			fi
+		done
+		
+		#Executa comando
+		for i in $(seq 1 ${argumento[0]}); do
+			if [ ${argumento[$i]} = "-baixa" ]; then
+				escolha="${argumento[$i+1]}${argumento[$i+2]}"
+				case $escolha in
+					"windows") baixa_imagem_windows; break;;
+					"linux") baixa_imagem_linux; break;;
+					"rec") baixa_rec; break;;
+					"windowslinux") baixa_imagens; break;;
+					"linuxwindows") baixa_imagens; break;;
+				esac
+			elif [ ${argumento[$i]} = "-instala" ]; then
+				escolha="${argumento[$i+1]}${argumento[$i+2]}"
+				case $escolha in
+					"windows") inatala_windows; break;;
+					"linux") instala_linux; break;;
+					"rec") instala_rec; break;;
+					"windowslinux") instala; break;;
+					"linuxwindows") instala; break;;
+				esac
+			fi
+		done
+		exit
+	fi
+}
+
+avaliar_args $@
+menu
+clear
