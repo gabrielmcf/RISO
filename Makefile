@@ -1,4 +1,5 @@
 #Makefile do RISO
+# bla bla bla
 RISOLOCATION := /usr/riso/		#Local dos scripts
 BINLOCATION := /usr/bin			#Local do atalho
 
