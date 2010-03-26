@@ -1,0 +1,36 @@
+<?xml version="1.0" standalone='no'?><!--*-nxml-*-->
+<!DOCTYPE service-group SYSTEM "avahi-service.dtd">
+
+<!--riso.service -->
+
+<!--
+  Arquivo com as variáveis de configuração do riso.
+  Essas variáveis são usadas para efetuar a comunicação do servidor riso(risos) com os cliente(riso).
+  Para mais informações sobre o processo ver http://avahi.org
+-->
+
+
+<service-group>
+
+  <name>Servidor RISO</name>
+
+  <service>
+     <!--Nome do serviço-->
+    <type>_RISO._tcp</type>
+
+    <!--Campo não é usado-->
+    <port>1234</port>
+
+    <!--Variáveis com tamanho das imagens geradas no servidor-->
+    <txt-record>tamlinux=123456789</txt-record>
+    <txt-record>tamwindows=123456789</txt-record>
+
+    <!--Localização dos sistemas operacionais no HD-->
+    <txt-record>partswap=/dev/sda2</txt-record>
+    <txt-record>partrec=/dev/sda4</txt-record>
+    <txt-record>partlinux=/dev/sda3</txt-record>
+    <txt-record>pratwindows=/dev/sda1</txt-record>
+
+  </service>
+
+</service-group>
