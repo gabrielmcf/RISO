@@ -1,1 +1,47 @@
-Arquivo
+#!/bin/bash
+
+# --------------------------------------------------------------------------
+# Arquivo de instalação do riso e do risos
+# --------------------------------------------------------------------------
+
+
+
+
+
+menu() {
+    echo "Bem vindo, Script de Instalação do Sistema RISO"
+    echo "Selecione uma opção"
+    echo "1) Instalar cliente(RISO)"
+    echo "2) Instalar servidor(RISOS)"
+    echo -n ">"
+    read opcao
+    case $opcao in
+        1) instala_riso
+           ;;
+        2) instala_risos
+           ;;
+        *) echo "Tenta dinovo, você consegue."
+           exit 1
+           ;;
+    esac
+}
+
+instala_riso() {
+    echo "Instalando Cliente (RISO)..."
+
+}
+
+instala_risos() {
+     echo "Instalando Servidor (RISOS)..."
+
+}
+
+
+
+#Verifica se usuário é o roo antes de executar.
+USER=`id -u`
+if [ $USER == '0' ]; then
+    menu
+else
+    echo "Só o root pode fazer isso, jovenzinho!"
+fi
