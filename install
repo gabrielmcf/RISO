@@ -4,10 +4,6 @@
 # Arquivo de instalação do riso e do risos
 # --------------------------------------------------------------------------
 
-
-
-
-
 menu() {
     echo "Bem vindo, Script de Instalação do Sistema RISO"
     echo "Selecione uma opção"
@@ -29,7 +25,24 @@ menu() {
 instala_riso() {
     echo "Instalando Cliente (RISO)..."
     
+    echo "Baixando dependências..."
+    apt-get install -y rtorrent screen ntfsprogs dialog
     
+    echo "Criando árvore de diretórios..."
+    mkdir -p /usr/riso
+    mkdir -p /usr/riso/imagens
+    
+    echo "Criando arquivo de inicialização..."
+    echo '#!/bin/bash' > /usr/bin/riso
+    echo '/usr/riso/riso $@' >> /usr/bin/riso
+    chmod +x /usr/bin/riso
+    
+    echo "Movendo script..."
+    cp ./src/riso /usr/riso/riso
+    chmod +x /usr/riso/riso
+    
+    echo "Sistema instalado com sucesso"
+    echo "Tente riso para iniciar"
 }
 
 instala_risos() {
@@ -48,7 +61,7 @@ instala_risos() {
     echo "Criando arquivo de inicialização..."
     echo '#!/bin/bash' > /usr/bin/risos
     echo '/usr/riso/risos $@' >> /usr/bin/risos
-    chmod +x /usr/bin/riso
+    chmod +x /usr/bin/risos
     
     echo "Movendo script..."
     cp ./src/risos /usr/riso/risos
