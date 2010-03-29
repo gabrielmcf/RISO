@@ -28,12 +28,78 @@ menu() {
 
 instala_riso() {
     echo "Instalando Cliente (RISO)..."
-
+    
+    
 }
 
 instala_risos() {
-     echo "Instalando Servidor (RISOS)..."
-
+    echo "Instalando Servidor (RISOS)..."
+    
+    echo "Criando senha para o root..."
+    passwd root
+    
+    echo "Baixando dependências..."
+    apt-get install -y bittorrent rtorrent screen ntfsprogs ssh dialog
+    
+    echo "Criando árvore de diretórios..."
+    mkdir -p /usr/riso
+    mkdir -p /usr/riso/imagens
+    
+    echo "Criando arquivo de inicialização..."
+    echo '#!/bin/bash' > /usr/bin/risos
+    echo '/usr/riso/risos $@' >> /usr/bin/risos
+    chmod +x /usr/bin/riso
+    
+    echo "Movendo script..."
+    cp ./src/risos /usr/riso/risos
+    chmod +x /usr/riso/risos
+    
+    echo "Criando arquivo de configuração..."
+    echo -n "Qual a partição em que o sistema de recuperação foi instalado(Ex: /dev/sda4):"
+    read partrec
+    echo -n "Qual a partição em que o Windows foi instalado(Ex: /dev/sda1):"
+    read partwindows    
+    echo -n "Qual a partição em que o Linux foi instalado(Ex: /dev/sda2):"
+    read partlinux
+    echo -n "Qual a partição em que o área de troca(swap) foi instalado(Ex: /dev/sda3):"
+    read partswap
+    echo '<?xml version="1.0" standalone="no"?><!--*-nxml-*-->' > /etc/avahi/services/riso.service
+    echo '<!DOCTYPE service-group SYSTEM "avahi-service.dtd">' >> /etc/avahi/services/riso.service
+    echo '' >> /etc/avahi/services/riso.service
+    echo '<!--riso.service -->' >> /etc/avahi/services/riso.service
+    echo '' >> /etc/avahi/services/riso.service
+    echo '<!--' >> /etc/avahi/services/riso.service
+    echo '  Arquivo com as variáveis de configuração do riso.' >> /etc/avahi/services/riso.service
+    echo '  Essas variáveis são usadas para efetuar a comunicação do servidor riso(risos) com os cliente(riso).' >> /etc/avahi/services/riso.service
+    echo '  Para mais informações sobre o processo ver http://avahi.org' >> /etc/avahi/services/riso.service
+    echo '-->' >> /etc/avahi/services/riso.service
+    echo '' >> /etc/avahi/services/riso.service
+    echo '<service-group>' >> /etc/avahi/services/riso.service
+    echo '  <name>Servidor RISO</name>' >> /etc/avahi/services/riso.service
+    echo '' >> /etc/avahi/services/riso.service
+    echo '  <service>' >> /etc/avahi/services/riso.service
+    echo '    <!--Nome do serviço-->' >> /etc/avahi/services/riso.service
+    echo "    <type>_RISO._tcp</type>" >> /etc/avahi/services/riso.service
+    echo '' >> /etc/avahi/services/riso.service
+    echo '    <!--Campo não é usado-->' >> /etc/avahi/services/riso.service
+    echo '    <port>1234</port>' >> /etc/avahi/services/riso.service
+    echo '' >> /etc/avahi/services/riso.service
+    echo '    <!--Variáveis com tamanho das imagens geradas no servidor-->' >> /etc/avahi/services/riso.service
+    echo '    <txt-record>tamlinux=123456789</txt-record>' >> /etc/avahi/services/riso.service
+    echo '    <txt-record>tamwindows=123456789</txt-record>' >> /etc/avahi/services/riso.service
+    echo '' >> /etc/avahi/services/riso.service
+    echo '    <!--Localização dos sistemas operacionais no HD-->' >> /etc/avahi/services/riso.service
+    echo "    <txt-record>partswap=${partswap}</txt-record>" >> /etc/avahi/services/riso.service
+    echo "    <txt-record>partrec=${partrec}</txt-record>" >> /etc/avahi/services/riso.service
+    echo "    <txt-record>partlinux=${partlinux}</txt-record>" >> /etc/avahi/services/riso.service
+    echo "    <txt-record>partwindows=${partwindows}</txt-record>" >> /etc/avahi/services/riso.service
+    echo '' >> /etc/avahi/services/riso.service
+    echo '  </service>' >> /etc/avahi/services/riso.service
+    echo '</service-group>' >> /etc/avahi/services/riso.service
+    
+    
+    echo "Sistema instalado com sucesso"
+    echo "Tente risos para iniciar"
 }
 
 
