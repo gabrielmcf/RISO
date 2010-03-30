@@ -52,7 +52,7 @@ instala_risos() {
     passwd root
     
     echo "Baixando dependências..."
-    apt-get install -y bittorrent rtorrent screen ntfsprogs ssh dialog
+    apt-get install -y avahi-daemon bittorrent rtorrent screen ntfsprogs ssh dialog
     
     echo "Criando árvore de diretórios..."
     mkdir -p /usr/riso

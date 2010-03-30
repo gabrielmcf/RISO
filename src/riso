@@ -1,7 +1,25 @@
 #!/bin/bash
 
-#Inclue arquivo com variáveis usadas pelo R.I.S.O.
-. /usr/riso/riso.conf
+#carrega variaveis do programa
+carrega_variaveis() {
+    servidor=`avahi-browse -rt _RISO._tcp | grep address | cut -d '[' -f2 | cut -c-13`
+    if [ -z $servidor ]; then
+        dialog \
+        --title 'Atencao' \
+        --ok-label 'OK' \
+        --msgbox 'Não existe nenhum servidor RISOS ativo na rede.\nVerifique a conexão e tente novamente.' \
+        0 0
+        clear
+        exit 1
+    fi
+    partwindows=`avahi-browse -rt _RISO._tcp | grep txt | cut -d '"' -f2 | cut -d '=' -f2`
+    partlinux=`avahi-browse -rt _RISO._tcp | grep txt | cut -d '"' -f4 | cut -d '=' -f2`
+    partrec=`avahi-browse -rt _RISO._tcp | grep txt | cut -d '"' -f6 | cut -d '=' -f2`
+    partswap=`avahi-browse -rt _RISO._tcp | grep txt | cut -d '"' -f8 | cut -d '=' -f2`
+    
+    tamwindows=`avahi-browse -rt _RISO._tcp | grep txt | cut -d '"' -f10 | cut -d '=' -f2`
+    tamlinux=`avahi-browse -rt _RISO._tcp | grep txt | cut -d '"' -f12 | cut -d '=' -f2`
+}
 
 #Instala imagens do Linux e do Windows.
 instala() {
@@ -19,7 +37,6 @@ instala() {
 	tar -xvf /usr/riso/imagens/linux.tar
 	cd ..
 	umount /mnt
-	reboot
 }
 
 #Instala imagem do Windows.
@@ -29,8 +46,6 @@ instala_windows() {
 
 	#Clona windows
 	ntfsclone -r /usr/riso/imagens/windows.img -O $partwindows
-
-	reboot
 }
 
 #Instala imagem do Linux.
@@ -45,7 +60,6 @@ instala_linux() {
 	tar -xvf /usr/riso/imagens/linux.tar
 	cd ..
 	umount /mnt
-	reboot
 }
 
 #Baixa imagens do Linux e do Windows.
@@ -53,12 +67,16 @@ baixa_imagens() {
 
 	clear
 	
-	ping -c 3 $servidor
-
-	if [ $? = 1 ]; do
-		echo "O servidor não está ativo ou o computador está sem rede!"
+	echo "Conectando ao servidor..."
+	ping -q -c 3 $servidor > /dev/null 2>&1
+	if [ $? -ne 0 ]; then
+		dialog \
+		--ok-label 'OK' \
+		--title 'ERRO' \
+		--msgbox 'Não foi possível estabelecer conexão com o servidor'\
+		0 0
 		return
-	done
+	fi
 
 	#Deleta imagens antigas.
 	echo "Removendo imagem antiga do windows..."
@@ -101,13 +119,17 @@ baixa_imagens() {
 baixa_imagem_windows() {
 
 	clear
-
-	ping -c 3 $servidor
-
-	if [ $? = 1 ]; do
-		echo "O servidor não está ativo ou o computador está sem rede!"
+	
+	echo "Conectando ao servidor..."
+	ping -q -c 3 $servidor > /dev/null 2>&1
+	if [ $? -ne 0 ]; then
+		dialog \
+		--ok-label 'OK' \
+		--title 'ERRO' \
+		--msgbox 'Não foi possível estabelecer conexão com o servidor'\
+		0 0
 		return
-	done
+	fi
 
 	#Deleta imagens antigas.
 	echo "Removendo imagem antiga do windows..."
@@ -142,12 +164,16 @@ baixa_imagem_linux() {
 
 	clear
 
-	ping -c 3 $servidor
-
-	if [ $? = 1 ]; do
-		echo "O servidor não está ativo ou o computador está sem rede!"
+	echo "Conectando ao servidor..."
+	ping -q -c 3 $servidor > /dev/null 2>&1
+	if [ $? -ne 0 ]; then
+		dialog \
+		--ok-label 'OK' \
+		--title 'ERRO' \
+		--msgbox 'Não foi possível estabelecer conexão com o servidor'\
+		0 0
 		return
-	done
+	fi
 
 	#Deleta imagens antigas.
 	echo "Removendo imagem antiga do linux..."
@@ -206,16 +232,20 @@ instala_rec() {
 #Baixa imagem do SO com o R.I.S.O.. 
 baixa_rec() {
 
-	ping -c 3 $servidor
-
-	if [ $? = 1 ]; do
-		echo "O servidor não está ativo ou o computador está sem rede!"
+	echo "Conectando ao servidor..."
+	ping -q -c 3 $servidor > /dev/null 2>&1
+	if [ $? -ne 0 ]; then
+		dialog \
+		--ok-label 'OK' \
+		--title 'ERRO' \
+		--msgbox 'Não foi possível estabelecer conexão com o servidor'\
+		0 0
 		return
-	done
+	fi
 
 	#Baixa refaz tabela de partiçao
 	wget $servidor/tab_part
-	dd if=/dev/zero of=/dev/sda bs=512 count=1
+	swapoff -a
 	sfdisk -f /dev/sda < tab_part
 
 	#Desmonta partiçoes
@@ -239,15 +269,19 @@ baixa_rec() {
 
 #Atualiza R.I.S.O..
 atualiza() {
-	wget 200.131.37.236/riso/riso -O /usr/riso/riso
-	wget 200.131.37.236/riso/riso.conf -O /usr/riso/riso.conf
-	bash /usr/riso/riso
-	exit
-}
-
-pega_ip() {
-	clear
-	dhclient
+		
+	ping -q -c 1 200.131.37.236 > /dev/null 2>&1
+	if [ $? -eq 0 ]; then
+		wget 200.131.37.236/riso -O /usr/riso/riso
+		bash /usr/riso/riso
+		exit
+	else
+		dialog \
+		--ok-label 'OK' \
+		--title 'ERRO' \
+		--msgbox 'Não foi possível estabelecer conexão com o servidor'\
+		0 0
+	fi
 }
 
 helpi() {
@@ -293,9 +327,9 @@ menu_instala_imagens() {
 
 	# De acordo com a opção escolhida, executa funcoes
 	case $opcao in
-		'"Windows"') instala_windows; break;;
-		'"Linux"') instala_linux; break;;
-		'"Windows" "Linux"') instala; break;;
+		'"Windows"') instala_windows; reboot;;
+		'"Linux"') instala_linux; reboot;;
+		'"Windows" "Linux"') instala; reboot;;
 	esac
 }
 
@@ -310,9 +344,9 @@ menu_baixa_imagens() {
 
 	# De acordo com a opção escolhida, executa funcoes
 	case $opcao in
-		'"Windows"') baixa_imagem_windows; instala_windows; break;;
-		'"Linux"') baixa_imagem_linux; instala_linux; break;;
-		'"Windows" "Linux"') baixa_imagens; instala; break;;
+		'"Windows"') baixa_imagem_windows; instala_windows; reboot;;
+		'"Linux"') baixa_imagem_linux; instala_linux; reboot;;
+		'"Windows" "Linux"') baixa_imagens; instala; reboot;;
 	esac
 }
 
@@ -324,16 +358,15 @@ menu() {
 		dialog --stdout                                             \
 		--ok-label 'Confirmar'                                      \
 		--cancel-label 'Sair'                                       \
-		--title 'RISO - 0.4'                                        \
+		--title 'RISO - 0.4a'                                       \
 		--menu 'Escolha o que voce quer fazer:'                     \
 			0 0 0                                               \
 			1 'Instalar imagens ja existentes'                  \
 			2 'Baixar e instalar novas imagens'                 \
 			3 'Baixar e instalar imagem de recuperação(LIVE_CD)'\
-			4 'Pegar IP'					    \ 
-			5 'Atualiza'                                        \
-			6 'Creditos'                                        \
-			7 'Help'                                            )
+			4 'Atualiza'                                        \
+			5 'Creditos'                                        \
+			6 'Help'                                            )
 	
 		# ESC, sai do programa...
 		[ $? -ne 0 ] && break
@@ -343,10 +376,9 @@ menu() {
 		1) menu_instala_imagens;;
 		2) menu_baixa_imagens;;
 		3) baixa_rec; instala_rec;;
-		4) pega_ip;;
-		5) atualiza;;
-		6) creditos;;
-		7) helpi;;
+		4) atualiza;;
+		5) creditos;;
+		6) helpi;;
 	esac	
 
 	done
@@ -355,9 +387,9 @@ menu() {
 #Avalia argumentos.
 avaliar_args() {
 
-#Cria vetor com os argumentos recebidos
-# argumento[0] = numero de argumentos passados.
-argumento=($# $@)
+	#Cria vetor com os argumentos recebidos
+	#argumento[0] = numero de argumentos passados.
+	argumento=($# $@)
 
 	#Verifica se algum arqumento foi passado
 	if [ $# = 0 ]; then
@@ -390,25 +422,25 @@ argumento=($# $@)
 		#Verifica syntax 
 		for i in $(seq 1 ${argumento[0]}); do
 			if [ ${argumento[$i]} = "-baixa" ]; then
-				escolha="${argumento[$i+1]}${argumento[$i+2]}"
-				case $escolha in
-					"windows") break;;
-					"linux") break;;
-					"rec") break;;
-					"windowslinux") break;;
-					"linuxwindows") break;;
-					*) echo "riso: Syntax ERRO"; echo "Tente \`riso --help\` para mais informações"; break;;
-				esac
+				until [ $i -eq ${argumento[0]} -o ${argumento[$i]} = "-instala" ]; do
+					((i++))
+					case ${argumento[$i]} in
+						"windows") break;;
+						"linux") break;;
+						"rec") break;;
+						*) echo "riso: Syntax ERRO"; echo "Tente \`riso --help\` para mais informações"; exit;;
+					esac
+				done
 			elif [ ${argumento[$i]} = "-instala" ]; then
-				escolha="${argumento[$i+1]}${argumento[$i+2]}"
-				case $escolha in
-					"windows") break;;
-					"linux") break;;
-					"rec") break;;
-					"windowslinux") break;;
-					"linuxwindows") break;;
-					*) echo "riso: Syntax ERRO"; echo "Tente \`riso --help\` para mais informações"; break;;
-				esac
+				until [ $i -eq ${argumento[0]} -o ${argumento[$i]} = "-baixa" ]; do
+					((i++))
+					case ${argumento[$i]} in
+						"windows") break;;
+						"linux") break;;
+						"rec") break;;
+						*) echo "riso: Syntax ERRO"; echo "Tente \`riso --help\` para mais informações"; exit;;
+					esac
+				done
 			elif [ ${argumento[$i]} = "windows" ]; then
 				continue
 			elif [ ${argumento[$i]} = "linux" ]; then
@@ -418,35 +450,48 @@ argumento=($# $@)
 			else
 				echo "riso: Syntax ERRO"
 				echo "Tente \`riso --help\` para mais informações"
+				exit
 			fi
 		done
 		
 		#Executa comando
 		for i in $(seq 1 ${argumento[0]}); do
 			if [ ${argumento[$i]} = "-baixa" ]; then
-				escolha="${argumento[$i+1]}${argumento[$i+2]}"
-				case $escolha in
-					"windows") baixa_imagem_windows; break;;
-					"linux") baixa_imagem_linux; break;;
-					"rec") baixa_rec; break;;
-					"windowslinux") baixa_imagens; break;;
-					"linuxwindows") baixa_imagens; break;;
-				esac
+				until [ $i -eq ${argumento[0]} -o ${argumento[$i]} = "-instala" ]; do
+					((i++))
+					case ${argumento[$i]} in
+						"windows") baixa_imagem_windows;;
+						"linux") baixa_imagem_linux;;
+						"rec") baixa_rec;;
+					esac
+				done
 			elif [ ${argumento[$i]} = "-instala" ]; then
-				escolha="${argumento[$i+1]}${argumento[$i+2]}"
-				case $escolha in
-					"windows") inatala_windows; break;;
-					"linux") instala_linux; break;;
-					"rec") instala_rec; break;;
-					"windowslinux") instala; break;;
-					"linuxwindows") instala; break;;
-				esac
+				until [ $i -eq ${argumento[0]} -o ${argumento[$i]} = "-baixa" ]; do
+					((i++))
+					case ${argumento[$i]} in
+						"windows") instala_windows;;
+						"linux") instala_linux;;
+						"rec") instala_rec;;
+					esac
+				done
+			elif [ ${argumento[$i]} = "windows" ]; then
+				continue
+			elif [ ${argumento[$i]} = "linux" ]; then
+				continue
+			elif [ ${argumento[$i]} = "rec" ]; then
+				continue
 			fi
 		done
-		exit
 	fi
+	reboot
 }
 
-avaliar_args $@
-menu
-clear
+USER=`id -u`
+if [ $USER == '0' ]; then
+    avaliar_args $@
+    carrega_variaveis
+	menu
+	clear
+else
+	echo 'Só o root pode fazer isso, jovenzinho!'
+fi

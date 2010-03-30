@@ -1,6 +1,6 @@
 #!/bin/bash
-#asdf
-#Include arquivo com variáveis usadas pelo R.I.S.O.S.
+
+#Inclue arquivo com variáveis usadas pelo R.I.S.O.
 . /usr/riso/riso.conf
 
 #Inicia tracker para disponibilizar imagens na rede.
