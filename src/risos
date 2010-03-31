@@ -1,17 +1,18 @@
 #!/bin/bash
 
-#Inclue arquivo com variáveis usadas pelo R.I.S.O.
-. /usr/riso/riso.conf
-
 #Inicia tracker para disponibilizar imagens na rede.
 inicia_servidor() {
-	if [ -e /usr/riso/imagens/windows.img -o -e /usr/riso/imagens/linux.tar ]
+	if [ -e /usr/riso/imagens/windows.img -a -e /usr/riso/imagens/linux.tar ]
 	then
 		bttrack --port 6969 --dfile dstate | grep pog &
 		cd /usr/riso/imagens	
 		rtorrent linux.tar.torrent windows.img.torrent
 	else
-		dialog --title 'Atencao' --ok-label 'OK' --msgbox 'Nao existem imagens prontas' 0 0
+		dialog \
+		--title 'Atenção' \
+		--ok-label 'OK' \
+		--msgbox 'Não existem imagens prontas' \
+		0 0
 	fi
 	
 }
@@ -24,7 +25,11 @@ inicia_servidor_windows() {
 		cd /usr/riso/imagens
 		rtorrent windows.img.torrent
 	else
-		dialog --title 'Atencao' --ok-label 'OK' --msgbox 'Voce ainda nao criou a imagem do windows' 0 0
+		dialog \
+		--title 'Atenção' \
+		--ok-label 'OK' \
+		--msgbox 'Você ainda não criou a imagem do windows' \
+		0 0
 	fi
 	
 }
@@ -37,7 +42,11 @@ inicia_servidor_linux() {
 		cd /usr/riso/imagens		
 		rtorrent linux.tar.torrent
 	else
-		dialog --title 'Atencao' --ok-label 'OK' --msgbox 'Voce ainda nao criou a imagen do linux' 0 0
+		dialog \
+		--title 'Atenção' \
+		--ok-label 'OK' \
+		--msgbox 'Você ainda não criou a imagem do linux' \
+		0 0
 	fi
 
 }
@@ -149,24 +158,21 @@ cria_rec() {
 	clear
 
 	echo "Removendo imagem antiga do windows..."
-	rm /usr/riso/imagens/windows.img
+	rm -f /usr/riso/imagens/windows.img
 	echo "Removendo imagem antiga do linux..."
-	rm /usr/riso/imagens/linux.tar
-	echo "Removendo imagem antiga do linux de recuperaçao..."
-	rm /usr/riso/imagens/rec.tar
-	sfdisk -d /dev/sda > /var/www/tab_part
-	chmod /var/www/tab_part
-	cp /boot/grub/menu.lst /var/www/menu.lst
-	chmod a+x /var/www/menu.lst
+	rm -f /usr/riso/imagens/linux.tar
+	echo "Removendo imagem antiga do linux de recuperação..."
+	rm -f /usr/riso/imagens/rec.tar
+	sfdisk -d /dev/sda > /usr/riso/tab_part
 	cd /
 	tar -cvf /usr/riso/imagens/rec.tar *
 }
 
 #Atualiza imagens.
 atualiza() {
-	wget 200.131.37.236/riso/riso -O /usr/riso/riso
+	wget 200.131.37.236/riso/risos -O /usr/riso/risos
 	wget 200.131.37.236/riso/riso.conf -O /usr/riso/riso.conf
-	bash /usr/riso/riso
+	bash /usr/riso/risos
 	exit
 }
 
@@ -214,9 +220,9 @@ menu_inicia_servidor() {
 
 	# De acordo com a opção escolhida, executa funcoes
 	case $opcao in
-		'"Windows"') inicia_servidor_windows; menu; break;;
-		'"Linux"') inicia_servidor_linux; menu; break;;
-		'"Windows" "Linux"') inicia_servidor; menu; break;;
+		'"Windows"') inicia_servidor_windows;;
+		'"Linux"') inicia_servidor_linux;;
+		'"Windows" "Linux"') inicia_servidor;;
 	esac
 }
 
@@ -232,13 +238,13 @@ menu_criar_imagens() {
 
 	# De acordo com a opção escolhida, executa funcoes
 	case $opcao in
-		'"Windows"') cria_windows; menu; break;;
-		'"Linux"') cria_linux; menu; break;;
-		'"Recuperacao"') cria_rec; menu; break;;
-		'"Windows" "Linux"') cria_windows; cria_linux; menu; break;;
-		'"Windows" "Recuperacao"') cria_rec; cria_windows; menu; break;;
-		'"Linux" "Recuperacao"') cria_rec; cria_linux; menu;  break;;
-		'"Windows" "Linux" "Recuperacao"') cria_rec; cria_windows; cria_linux; menu; break;;
+		'"Windows"') cria_windows;;
+		'"Linux"') cria_linux;;
+		'"Recuperacao"') cria_rec;;
+		'"Windows" "Linux"') cria_windows; cria_linux;;
+		'"Windows" "Recuperacao"') cria_rec; cria_windows;;
+		'"Linux" "Recuperacao"') cria_rec; cria_linux;;
+		'"Windows" "Linux" "Recuperacao"') cria_rec; cria_windows; cria_linux;;
 	esac
 }
 
@@ -254,13 +260,13 @@ menu_criar_torrents() {
 
 # De acordo com a opção escolhida, executa funcoes
 	case $opcao in
-		'"Windows"') cria_torrent_windows; menu; break;;
-		'"Linux"') cria_torrent_linux; menu; break;;
-		'"Recuperacao"') cria_torrent_rec; menu; break;;
-		'"Windows" "Linux"') cria_torrent_windows; cria_torrent_linux; menu; break;;
-		'"Windows" "Recuperacao"') cria_torrent_rec; cria_torrent_windows; menu; break;;
-		'"Linux" "Recuperacao"') cria_torrent_rec; cria_torrent_linux; menu;  break;;
-		'"Windows" "Linux" "Recuperacao"') cria_torrent_rec; cria_torrent_windows; cria_torrent_linux; menu; break;;
+		'"Windows"') cria_torrent_windows;;
+		'"Linux"') cria_torrent_linux;;
+		'"Recuperacao"') cria_torrent_rec;;
+		'"Windows" "Linux"') cria_torrent_windows; cria_torrent_linux;;
+		'"Windows" "Recuperacao"') cria_torrent_rec; cria_torrent_windows;;
+		'"Linux" "Recuperacao"') cria_torrent_rec; cria_torrent_linux;;
+		'"Windows" "Linux" "Recuperacao"') cria_torrent_rec; cria_torrent_windows; cria_torrent_linux;;
 	esac
 }
 
@@ -286,12 +292,12 @@ menu() {
 	
 		# De acordo com a opção escolhida, executa funçao
 		case $opcao in
-			1) menu_inicia_servidor; menu; break;;
-			2) menu_criar_imagens; menu; break;;
-			3) menu_criar_torrents; menu; break;;
-			4) atualiza; menu; break;;
-			5) creditos; menu; break;;
-			6) helpi; menu; break;;
+			1) menu_inicia_servidor;;
+			2) menu_criar_imagens;;
+			3) menu_criar_torrents;;
+			4) atualiza;;
+			5) creditos;;
+			6) helpi;;
 		esac	
 
 	done

@@ -1,8 +1,9 @@
 #!/bin/bash
 
-#carrega variaveis do programa
+#carrega variaveis do arquivo riso.service para variáveis do sistema.
 carrega_variaveis() {
-    servidor=`avahi-browse -rt _RISO._tcp | grep address | cut -d '[' -f2 | cut -c-13`
+    avahi_saida=`avahi-browse -rtp _RISO._tcp | grep '='`
+    servidor=`cut -d ';' -f8 <<< ${avahi_saida}`
     if [ -z $servidor ]; then
         dialog \
         --title 'Atencao' \
@@ -12,13 +13,12 @@ carrega_variaveis() {
         clear
         exit 1
     fi
-    partwindows=`avahi-browse -rt _RISO._tcp | grep txt | cut -d '"' -f2 | cut -d '=' -f2`
-    partlinux=`avahi-browse -rt _RISO._tcp | grep txt | cut -d '"' -f4 | cut -d '=' -f2`
-    partrec=`avahi-browse -rt _RISO._tcp | grep txt | cut -d '"' -f6 | cut -d '=' -f2`
-    partswap=`avahi-browse -rt _RISO._tcp | grep txt | cut -d '"' -f8 | cut -d '=' -f2`
-    
-    tamwindows=`avahi-browse -rt _RISO._tcp | grep txt | cut -d '"' -f10 | cut -d '=' -f2`
-    tamlinux=`avahi-browse -rt _RISO._tcp | grep txt | cut -d '"' -f12 | cut -d '=' -f2`
+    partwindows=`(cut -d ';' -f10 | cut -d '"' -f2 | cut -d '=' -f2) <<< ${avahi_saida}`
+    partlinux=`(cut -d ';' -f10 | cut -d '"' -f4 | cut -d '=' -f2) <<< ${avahi_saida}`
+    partrec=`(cut -d ';' -f10 | cut -d '"' -f6 | cut -d '=' -f2) <<< ${avahi_saida}`
+    partswap=`(cut -d ';' -f10 | cut -d '"' -f8 | cut -d '=' -f2) <<< ${avahi_saida}`   
+    tamwindows=`(cut -d ';' -f10 | cut -d '"' -f10 | cut -d '=' -f2) <<< ${avahi_saida}`
+    tamlinux=`(cut -d ';' -f10 | cut -d '"' -f12 | cut -d '=' -f2) <<< ${avahi_saida}`
 }
 
 #Instala imagens do Linux e do Windows.
@@ -68,15 +68,7 @@ baixa_imagens() {
 	clear
 	
 	echo "Conectando ao servidor..."
-	ping -q -c 3 $servidor > /dev/null 2>&1
-	if [ $? -ne 0 ]; then
-		dialog \
-		--ok-label 'OK' \
-		--title 'ERRO' \
-		--msgbox 'Não foi possível estabelecer conexão com o servidor'\
-		0 0
-		return
-	fi
+	carrega_variaveis
 
 	#Deleta imagens antigas.
 	echo "Removendo imagem antiga do windows..."
@@ -100,12 +92,10 @@ baixa_imagens() {
 	echo "Baixando imagens..."
 	# Loop que aguarda o torrent ser concluido.
 	# Compara o tamanho do arquivo que esta sendo baixado pelo rtorrent
-	# com o tamanho total no arquivo riso.conf.
+	# com o tamanho total no arquivo riso.service.
 	sizelocwin="0"
 	sizeloclin="0"
-	sizeimgwin=`cat /usr/riso/riso.conf | grep tamwindows | cut -d'=' -f2`
-	sizeimglin=`cat /usr/riso/riso.conf | grep tamlinux | cut -d'=' -f2`
-	while [ $sizelocwin != $sizeimgwin -o $sizeloclin != $sizeimglin ]; do
+	while [ $sizelocwin != $tamwindows -o $sizeloclin != $tamlinux ]; do
 		sleep 2m
 		sizelocwin=`du /usr/riso/imagens/windows.img | cut -f1`
 		sizeloclin=`du /usr/riso/imagens/linux.tar | cut -f1`
@@ -121,15 +111,7 @@ baixa_imagem_windows() {
 	clear
 	
 	echo "Conectando ao servidor..."
-	ping -q -c 3 $servidor > /dev/null 2>&1
-	if [ $? -ne 0 ]; then
-		dialog \
-		--ok-label 'OK' \
-		--title 'ERRO' \
-		--msgbox 'Não foi possível estabelecer conexão com o servidor'\
-		0 0
-		return
-	fi
+	carrega_variaveis
 
 	#Deleta imagens antigas.
 	echo "Removendo imagem antiga do windows..."
@@ -149,8 +131,7 @@ baixa_imagem_windows() {
 	# Compara o tamanho do arquivo que esta sendo baixado pelo rtorrent
 	# com o tamanho total no arquivo riso.conf.
 	sizelocwin="0"
-	sizeimgwin=`cat /usr/riso/riso.conf | grep tamwindows | cut -d'=' -f2`
-	while [ $sizelocwin != $sizeimgwin ]; do
+	while [ $sizelocwin != $tamwindows ]; do
 		sleep 2m
 		sizelocwin=`du /usr/riso/imagens/windows.img | cut -f1`
 	done
@@ -165,15 +146,7 @@ baixa_imagem_linux() {
 	clear
 
 	echo "Conectando ao servidor..."
-	ping -q -c 3 $servidor > /dev/null 2>&1
-	if [ $? -ne 0 ]; then
-		dialog \
-		--ok-label 'OK' \
-		--title 'ERRO' \
-		--msgbox 'Não foi possível estabelecer conexão com o servidor'\
-		0 0
-		return
-	fi
+	carrega_variaveis
 
 	#Deleta imagens antigas.
 	echo "Removendo imagem antiga do linux..."
@@ -196,8 +169,7 @@ baixa_imagem_linux() {
 	# Compara o tamanho do arquivo que esta sendo baixado pelo rtorrent
 	# com o tamanho total no arquivo riso.conf.
 	sizeloclin="0"
-	sizeimglin=`cat /usr/riso/riso.conf | grep tamlinux | cut -d'=' -f2`
-	while [ $sizeloclin != $sizeimglin ]; do
+	while [ $sizeloclin != $tamlinux ]; do
 		sleep 2m
 
 		sizeloclin=`du /usr/riso/imagens/linux.tar | cut -f1`
@@ -233,15 +205,7 @@ instala_rec() {
 baixa_rec() {
 
 	echo "Conectando ao servidor..."
-	ping -q -c 3 $servidor > /dev/null 2>&1
-	if [ $? -ne 0 ]; then
-		dialog \
-		--ok-label 'OK' \
-		--title 'ERRO' \
-		--msgbox 'Não foi possível estabelecer conexão com o servidor'\
-		0 0
-		return
-	fi
+	carrega_variaveis
 
 	#Baixa refaz tabela de partiçao
 	wget $servidor/tab_part
@@ -399,11 +363,11 @@ avaliar_args() {
 		echo "Uso: riso [OPÇÃO] [ARQUIVO]...                        "
 		echo "Baixa e/ou instala imagen(s) do(s) sistema(s) operacional(s)"
 		echo "                                                            "
-		echo "   -baixa, --baixa as imagens sucessoras                    "
+		echo "   --baixa, baixa as imagens sucessoras                     "
 		echo "       windows --imagem do windows                          "
 		echo "       linux --imagem do linux                              "
 		echo "       rec --imagem do sistema de recuperação               "
-		echo "   -instala, --instala as imagens sucessoras                "
+		echo "   --instala, instala as imagens sucessoras                 "
 		echo "       windows --imagem do windows                          "
 		echo "       linux --imagem do linux                              "
 		echo "       rec --imagem do sistema de recuperação               "
@@ -413,16 +377,16 @@ avaliar_args() {
 		echo "                                                            "
 		echo "Exemplo:                                                    "
 		echo "    Baixa imagens do linux e do windows e instala a do linux"
-		echo "      riso -baixa windows linux -instala linux        "
+		echo "      riso --baixa windows linux --instala linux            "
 		echo "                                                            "
-		echo "Comunicar \"bugs\" para <germano@comp.eng.br>               "
+		echo "Comunicar \"bugs\" para <riso@comp.eng.br>               "
 		exit
 	#Tenta executar
 	else
 		#Verifica syntax 
 		for i in $(seq 1 ${argumento[0]}); do
-			if [ ${argumento[$i]} = "-baixa" ]; then
-				until [ $i -eq ${argumento[0]} -o ${argumento[$i]} = "-instala" ]; do
+			if [ ${argumento[$i]} = "--baixa" ]; then
+				until [ $i -eq ${argumento[0]} -o ${argumento[$i]} = "--instala" ]; do
 					((i++))
 					case ${argumento[$i]} in
 						"windows") break;;
@@ -431,8 +395,8 @@ avaliar_args() {
 						*) echo "riso: Syntax ERRO"; echo "Tente \`riso --help\` para mais informações"; exit;;
 					esac
 				done
-			elif [ ${argumento[$i]} = "-instala" ]; then
-				until [ $i -eq ${argumento[0]} -o ${argumento[$i]} = "-baixa" ]; do
+			elif [ ${argumento[$i]} = "--instala" ]; then
+				until [ $i -eq ${argumento[0]} -o ${argumento[$i]} = "--baixa" ]; do
 					((i++))
 					case ${argumento[$i]} in
 						"windows") break;;
@@ -455,9 +419,10 @@ avaliar_args() {
 		done
 		
 		#Executa comando
+		carrega_variaveis
 		for i in $(seq 1 ${argumento[0]}); do
-			if [ ${argumento[$i]} = "-baixa" ]; then
-				until [ $i -eq ${argumento[0]} -o ${argumento[$i]} = "-instala" ]; do
+			if [ ${argumento[$i]} = "--baixa" ]; then
+				until [ $i -eq ${argumento[0]} -o ${argumento[$i]} = "--instala" ]; do
 					((i++))
 					case ${argumento[$i]} in
 						"windows") baixa_imagem_windows;;
@@ -465,8 +430,8 @@ avaliar_args() {
 						"rec") baixa_rec;;
 					esac
 				done
-			elif [ ${argumento[$i]} = "-instala" ]; then
-				until [ $i -eq ${argumento[0]} -o ${argumento[$i]} = "-baixa" ]; do
+			elif [ ${argumento[$i]} = "--instala" ]; then
+				until [ $i -eq ${argumento[0]} -o ${argumento[$i]} = "--baixa" ]; do
 					((i++))
 					case ${argumento[$i]} in
 						"windows") instala_windows;;
@@ -487,9 +452,8 @@ avaliar_args() {
 }
 
 USER=`id -u`
-if [ $USER == '0' ]; then
+if [ $USER == '0' ]; then  
     avaliar_args $@
-    carrega_variaveis
 	menu
 	clear
 else
