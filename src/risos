@@ -1,8 +1,17 @@
 #!/bin/bash
 
+#Variáveis do script
+$dir_riso=/usr/riso
+$dir_img=$dir_riso/imagens
+$img_win=$dir_img/windows.img
+$img_lin=$dir_img/linux.tar
+$tor_win=$img_win.torrent
+$tor_lin=$img_lin.torrent
+
+
 #Inicia tracker para disponibilizar imagens na rede.
 inicia_servidor() {
-	if [ -e /usr/riso/imagens/windows.img -a -e /usr/riso/imagens/linux.tar ]
+	if [ -e $img_win -a -e $img_lin ]
 	then
 		bttrack --port 6969 --dfile dstate | grep pog &
 		cd /usr/riso/imagens	
@@ -19,7 +28,7 @@ inicia_servidor() {
 
 #Inicia tracker para disponibilizar imagem do Windows na rede.
 inicia_servidor_windows() {
-	if [ -e /usr/riso/imagens/windows.img ]
+	if [ -e $img_win ]
 	then
 		bttrack --port 6969 --dfile dstate | grep pog &
 		cd /usr/riso/imagens
@@ -36,7 +45,7 @@ inicia_servidor_windows() {
 
 #Inicia tracker para disponibilizar imagem do Linux na rede.
 inicia_servidor_linux() {
-	if [ -e /usr/riso/imagens/linux.tar ]
+	if [ -e $img_lin ]
 	then
 		bttrack --port 6969 --dfile dstate | grep laialadaiasabadanaavemaria &
 		cd /usr/riso/imagens		
@@ -56,12 +65,12 @@ cria_linux() {
 
 	clear
 	echo "Removendo imagem antiga do linux..."
-	rm /usr/riso/imagens/linux.tar 
-	rm /usr/riso/imagens/linux.tar.torrent
+	rm $img_lin 
+	rm $tor_lin
 	rm /var/www/linux.tar.torrent
 	mount $partlinux /mnt
 	cd /mnt
-	tar -cvf /usr/riso/imagens/linux.tar *
+	tar -cvf $img_lin *
 	umount /mnt
 	
 	#Escreve o ip do servidor no riso.conf
@@ -69,10 +78,10 @@ cria_linux() {
 	sed s/servidor=[1234567890.]*/servidor=$servidor/ < /usr/riso/riso.conf > /usr/riso/riso.tmp
 	mv /usr/riso/riso.tmp /usr/riso/riso.conf
 
-	btmakemetafile.bittorrent /usr/riso/imagens/linux.tar http://$servidor:6969/announce
-	cp /usr/riso/imagens/linux.tar.torrent /var/www
+	btmakemetafile.bittorrent $img_lin http://$servidor:6969/announce
+	cp $tor_lin /var/www
 	
-	tamlin=`ls -l /usr/riso/imagens/linux.tar | awk '{print $5}'`
+	tamlin=`ls -l $img_lin | awk '{print $5}'`
 	sed "s/tamlinux=[1234567890]*/tamlinux=$tamlin/" < /usr/riso/riso.conf > /usr/riso/riso.tmp
 	mv /usr/riso/riso.tmp /usr/riso/riso.conf
 	
@@ -90,11 +99,11 @@ cria_torrent_linux() {
 	mv /usr/riso/riso.tmp /usr/riso/riso.conf
 	
 	#Cria o torrent e copia pro www
-	btmakemetafile.bittorrent /usr/riso/imagens/linux.tar http://$servidor:6969/announce
-	cp /usr/riso/imagens/linux.tar.torrent /var/www
+	btmakemetafile.bittorrent $img_lin http://$servidor:6969/announce
+	cp $tor_lin /var/www
 	
 	#Escreve o tamanho da imagem no riso.conf
-	tamlin=`ls -l /usr/riso/imagens/linux.tar | awk '{print $5}'`
+	tamlin=`ls -l $img_lin | awk '{print $5}'`
 	sed "s/tamlinux=[1234567890]*/tamlinux=$tamlin/" < /usr/riso/riso.conf > /usr/riso/riso.tmp
 	mv /usr/riso/riso.tmp /usr/riso/riso.conf
 
@@ -109,21 +118,21 @@ cria_windows() {
 	clear
 
 	echo "Removendo imagem antiga do windows..."
-	rm /usr/riso/imagens/windows.img
-	rm /usr/riso/imagens/windows.img.torrent
+	rm $img_win
+	rm $tor_win
 	rm /var/www/windows.img.torrent
 	
-	ntfsclone -s -O /usr/riso/imagens/windows.img $partwindows
+	ntfsclone -s -O $img_win $partwindows
 	
 	#Escreve o ip do servidor no riso.conf
 	servidor=`ifconfig eth0 | grep "inet end" | awk '{print $3}'`
 	sed s/servidor=[1234567890.]*/servidor=$servidor/ < /usr/riso/riso.conf > /usr/riso/riso.tmp
 	mv /usr/riso/riso.tmp /usr/riso/riso.conf
 	
-	btmakemetafile.bittorrent /usr/riso/imagens/windows.img http://$servidor:6969/announce
-	cp /usr/riso/imagens/windows.img.torrent /var/www
+	btmakemetafile.bittorrent $img_win http://$servidor:6969/announce
+	cp $tor_win /var/www
 	
-	tamwin=`ls -l /usr/riso/imagens/windows.img | awk '{print $5}'`
+	tamwin=`ls -l $img_win | awk '{print $5}'`
 	sed "s/tamwindows=[1234567890]*/tamwindows=$tamwin/" < /usr/riso/riso.conf > /usr/riso/riso.tmp
 	mv /usr/riso/riso.tmp /usr/riso/riso.conf
 	
@@ -141,10 +150,10 @@ cria_torrent_windows() {
 	sed s/servidor=[1234567890.]*/servidor=$servidor/ < /usr/riso/riso.conf > /usr/riso/riso.tmp
 	mv /usr/riso/riso.tmp /usr/riso/riso.conf
 	
-	btmakemetafile.bittorrent /usr/riso/imagens/windows.img http://$servidor:6969/announce
-	cp /usr/riso/imagens/windows.img.torrent /var/www
+	btmakemetafile.bittorrent $img_win http://$servidor:6969/announce
+	cp $tor_win /var/www
 	
-	tamwin=`ls -l /usr/riso/imagens/windows.img | awk '{print $5}'`
+	tamwin=`ls -l $img_win | awk '{print $5}'`
 	sed "s/tamwindows=[1234567890]*/tamwindows=$tamwin/" < /usr/riso/riso.conf > /usr/riso/riso.tmp
 	mv /usr/riso/riso.tmp /usr/riso/riso.conf
 	
@@ -158,9 +167,11 @@ cria_rec() {
 	clear
 
 	echo "Removendo imagem antiga do windows..."
-	rm -f /usr/riso/imagens/windows.img
+	rm -f $img_win
+	rm -f $tor_win
 	echo "Removendo imagem antiga do linux..."
-	rm -f /usr/riso/imagens/linux.tar
+	rm -f $img_lin
+	rm -f $tor_lin
 	echo "Removendo imagem antiga do linux de recuperação..."
 	rm -f /usr/riso/imagens/rec.tar
 	sfdisk -d /dev/sda > /usr/riso/tab_part
@@ -168,7 +179,7 @@ cria_rec() {
 	tar -cvf /usr/riso/imagens/rec.tar *
 }
 
-#Atualiza imagens.
+#Atualiza riso.
 atualiza() {
 	wget 200.131.37.236/riso/risos -O /usr/riso/risos
 	wget 200.131.37.236/riso/riso.conf -O /usr/riso/riso.conf
