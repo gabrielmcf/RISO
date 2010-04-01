@@ -7,6 +7,22 @@
 dep_cli="avahi-utils rtorrent screen ntfsprogs dialog ssh"
 dep_ser="avahi-utils avahi-daemon bittorrent rtorrent screen ntfsprogs ssh dialog"
 
+menu2() {
+	opcao=$( dialog --stdout \
+	--title	'Instalação do RISO' \
+	--ok-label 'Confirmar'   \
+	--checklist 'Deseja instalar:' \
+	0 0 0 \
+	RISOS '' ON  \
+	RISO '' ON )
+
+	# De acordo com a opção escolhida, executa funcoes
+	case $opcao in
+		'"RISOS"') instala_risos;;
+		'"RISO"') instala_riso;;
+		'"RISOS" "RISO"') instala_riso; instala_risos;;
+	esac
+}
 
 menu() {
     echo "Bem vindo, Script de Instalação do Sistema RISO"
@@ -128,7 +144,7 @@ instala_risos() {
 #Verifica se usuário é o root antes de executar.
 USER=`id -u`
 if [ $USER == '0' ]; then
-    menu
+    menu2
 else
     echo "Só o root pode fazer isso, jovenzinho!"
 fi
