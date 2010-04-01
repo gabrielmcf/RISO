@@ -1,5 +1,13 @@
 #!/bin/bash
 
+#Variáveis do script
+$dir_riso=/usr/riso
+$dir_img=$dir_riso/imagens
+$img_win=$dir_img/windows.img
+$img_lin=$dir_img/linux.tar
+$tor_win=$img_win.torrent
+$tor_lin=$img_lin.torrent
+
 #carrega variaveis do arquivo riso.service para variáveis do sistema.
 carrega_variaveis() {
     avahi_saida=`avahi-browse -rtp _RISO._tcp | grep '='`
@@ -28,13 +36,13 @@ instala() {
 	umount $partlinux
 
 	#Clona windows.
-	ntfsclone -r /usr/riso/imagens/windows.img -O $partwindows
+	ntfsclone -r $img_win -O $partwindows
 
 	#Clona linux.
 	mkfs.ext3 $partlinux
 	mount $partlinux /mnt
 	cd /mnt
-	tar -xvf /usr/riso/imagens/linux.tar
+	tar -xvf $img_lin
 	cd ..
 	umount /mnt
 }
@@ -45,7 +53,7 @@ instala_windows() {
 	umount $partwindows
 
 	#Clona windows
-	ntfsclone -r /usr/riso/imagens/windows.img -O $partwindows
+	ntfsclone -r $img_win -O $partwindows
 }
 
 #Instala imagem do Linux.
@@ -57,7 +65,7 @@ instala_linux() {
 	mkfs.ext3 $partlinux
 	mount $partlinux /mnt
 	cd /mnt
-	tar -xvf /usr/riso/imagens/linux.tar
+	tar -xvf $img_lin
 	cd ..
 	umount /mnt
 }
@@ -72,16 +80,16 @@ baixa_imagens() {
 
 	#Deleta imagens antigas.
 	echo "Removendo imagem antiga do windows..."
-	rm /usr/riso/imagens/windows.img
+	rm $img_win
+	rm $tor_win
 	echo "Removendo imagem antiga do linux..."
-	rm /usr/riso/imagens/linux.tar
-	rm /usr/riso/imagens/linux.tar.torrent
-	rm /usr/riso/imagens/windows.img.torrent
+	rm $img_lin
+	rm $tor_lin
 	
 
 	#Baixa novas imagens.
-	wget http://$servidor/windows.img.torrent -O /usr/riso/imagens/windows.img.torrent
-	wget http://$servidor/linux.tar.torrent -O /usr/riso/imagens/linux.tar.torrent	
+	wget http://$servidor/windows.img.torrent -O $tor_win
+	wget http://$servidor/linux.tar.torrent -O $tor_lin
 	
 	cd /usr/riso/imagens/
 	screen -d -m rtorrent windows.img.torrent linux.tar.torrent
@@ -97,8 +105,8 @@ baixa_imagens() {
 	sizeloclin="0"
 	while [ $sizelocwin != $tamwindows -o $sizeloclin != $tamlinux ]; do
 		sleep 2m
-		sizelocwin=`du /usr/riso/imagens/windows.img | cut -f1`
-		sizeloclin=`du /usr/riso/imagens/linux.tar | cut -f1`
+		sizelocwin=`du $img_win | cut -f1`
+		sizeloclin=`du $img_lin | cut -f1`
 	done
 
 	#Finaliza download
@@ -115,10 +123,10 @@ baixa_imagem_windows() {
 
 	#Deleta imagens antigas.
 	echo "Removendo imagem antiga do windows..."
-	rm /usr/riso/imagens/windows.img
+	rm $img_win
 
 	#Baixa novas imagens.
-	wget http://$servidor/windows.img.torrent -O /usr/riso/imagens/windows.img.torrent	
+	wget http://$servidor/windows.img.torrent -O $tor_win
 	
 	cd /usr/riso/imagens/
 	screen -d -m rtorrent windows.img.torrent
@@ -133,7 +141,7 @@ baixa_imagem_windows() {
 	sizelocwin="0"
 	while [ $sizelocwin != $tamwindows ]; do
 		sleep 2m
-		sizelocwin=`du /usr/riso/imagens/windows.img | cut -f1`
+		sizelocwin=`du $img_win | cut -f1`
 	done
 
 	#Finaliza download
@@ -150,13 +158,11 @@ baixa_imagem_linux() {
 
 	#Deleta imagens antigas.
 	echo "Removendo imagem antiga do linux..."
-	rm /usr/riso/imagens/linux.tar
-	rm /usr/riso/imagens/linux.tar.torrent
-	rm /usr/riso/imagens/windows.img.torrent
-	
+	rm $img_lin
+	rm $tor_lin
 
 	#Baixa novas imagens.
-	wget http://$servidor/linux.tar.torrent -O /usr/riso/imagens/linux.tar.torrent	
+	wget http://$servidor/linux.tar.torrent -O $tor_lin
 	
 	cd /usr/riso/imagens/
 	screen -d -m rtorrent linux.tar.torrent
@@ -172,7 +178,7 @@ baixa_imagem_linux() {
 	while [ $sizeloclin != $tamlinux ]; do
 		sleep 2m
 
-		sizeloclin=`du /usr/riso/imagens/linux.tar | cut -f1`
+		sizeloclin=`du $img_lin | cut -f1`
 	done
 
 	#Finaliza download
@@ -368,6 +374,7 @@ avaliar_args() {
 		echo "       windows --imagem do windows                          "
 		echo "       linux --imagem do linux                              "
 		echo "       rec --imagem do sistema de recuperação               "
+		echo "								  "
 		echo "   --instala, instala as imagens sucessoras                 "
 		echo "       windows --imagem do windows                          "
 		echo "       linux --imagem do linux                              "
