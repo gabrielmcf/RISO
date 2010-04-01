@@ -4,6 +4,10 @@
 # Arquivo de instalação do riso e do risos
 # --------------------------------------------------------------------------
 
+dep_cli="avahi-utils rtorrent screen ntfsprogs dialog ssh"
+dep_ser="avahi-utils avahi-daemon bittorrent rtorrent screen ntfsprogs ssh dialog"
+
+
 menu() {
     echo "Bem vindo, Script de Instalação do Sistema RISO"
     echo "Selecione uma opção"
@@ -16,7 +20,7 @@ menu() {
            ;;
         2) instala_risos
            ;;
-        *) echo "Tenta dinovo, você consegue."
+        *) echo "Tente novamente, você consegue..."
            exit 1
            ;;
     esac
@@ -26,7 +30,7 @@ instala_riso() {
     echo "Instalando Cliente (RISO)..."
     
     echo "Baixando dependências..."
-    apt-get install -y avahi-utils rtorrent screen ntfsprogs dialog
+    apt-get install -y $dep_cli
     
     echo "Criando árvore de diretórios..."
     mkdir -p /usr/riso
@@ -41,8 +45,8 @@ instala_riso() {
     cp ./src/riso /usr/riso/riso
     chmod +x /usr/riso/riso
     
-    echo "Sistema instalado com sucesso"
-    echo "Tente riso para iniciar"
+    echo "Sistema instalado com sucesso."
+    echo "Tente digitar 'riso' para iniciar."
 }
 
 instala_risos() {
@@ -52,7 +56,7 @@ instala_risos() {
     passwd root
     
     echo "Baixando dependências..."
-    apt-get install -y avahi-utils avahi-daemon bittorrent rtorrent screen ntfsprogs ssh dialog
+    apt-get install -y $dep_ser
     
     echo "Criando árvore de diretórios..."
     mkdir -p /usr/riso
@@ -121,7 +125,7 @@ instala_risos() {
 
 
 
-#Verifica se usuário é o roo antes de executar.
+#Verifica se usuário é o root antes de executar.
 USER=`id -u`
 if [ $USER == '0' ]; then
     menu
