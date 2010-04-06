@@ -1,12 +1,12 @@
 #!/bin/bash
 
 #Variáveis do script
-$dir_riso=/usr/riso
-$dir_img=$dir_riso/imagens
-$img_win=$dir_img/windows.img
-$img_lin=$dir_img/linux.tar
-$tor_win=$img_win.torrent
-$tor_lin=$img_lin.torrent
+dir_riso=/usr/riso
+dir_img=$dir_riso/imagens
+img_win=$dir_img/windows.img
+img_lin=$dir_img/linux.tar
+tor_win=$img_win.torrent
+tor_lin=$img_lin.torrent
 
 
 #Inicia tracker para disponibilizar imagens na rede.
