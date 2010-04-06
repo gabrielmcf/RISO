@@ -5,8 +5,10 @@ dir_riso=/usr/riso
 dir_img=$dir_riso/imagens
 img_win=$dir_img/windows.img
 img_lin=$dir_img/linux.tar
+img_rec=$dir_img/rec.tar
 tor_win=$img_win.torrent
 tor_lin=$img_lin.torrent
+tab_part=$dir_img/tab_part
 
 #carrega variaveis do arquivo riso.service para variáveis do sistema.
 carrega_variaveis() {
@@ -27,6 +29,9 @@ carrega_variaveis() {
     partswap=`(cut -d ';' -f10 | cut -d '"' -f8 | cut -d '=' -f2) <<< ${avahi_saida}`   
     tamwindows=`(cut -d ';' -f10 | cut -d '"' -f10 | cut -d '=' -f2) <<< ${avahi_saida}`
     tamlinux=`(cut -d ';' -f10 | cut -d '"' -f12 | cut -d '=' -f2) <<< ${avahi_saida}`
+    sa_partwindows=`(cut -d ';' -f10 | cut -d '"' -f14 | cut -d '=' -f2) <<< ${avahi_saida}`
+    sa_partlinux=`(cut -d ';' -f10 | cut -d '"' -f16 | cut -d '=' -f2) <<< ${avahi_saida}`
+    sa_partrec=`(cut -d ';' -f10 | cut -d '"' -f18 | cut -d '=' -f2) <<< ${avahi_saida}`
 }
 
 #Instala imagens do Linux e do Windows.
@@ -72,42 +77,55 @@ instala_linux() {
 
 #Baixa imagens do Linux e do Windows.
 baixa_imagens() {
-
-	clear
 	
 	echo "Conectando ao servidor..."
 	carrega_variaveis
 
 	#Deleta imagens antigas.
 	echo "Removendo imagem antiga do windows..."
-	rm $img_win
-	rm $tor_win
+	rm -f $img_win
+	rm -f $tor_win
 	echo "Removendo imagem antiga do linux..."
-	rm $img_lin
-	rm $tor_lin
+	rm -f $img_lin
+	rm -f $tor_lin
 	
+	#Inicia download das imagens em terminal virtual.
+    scp root@${servidor}:${tor_win} ${tor_win}
+	scp root@${servidor}:${tor_lin} ${tor_lin}
+	cd ${dir_img}
+	screen -d -m rtorrent ${tor_win} ${tor_lin}
 
-	#Baixa novas imagens.
-	wget http://$servidor/windows.img.torrent -O $tor_win
-	wget http://$servidor/linux.tar.torrent -O $tor_lin
-	
-	cd /usr/riso/imagens/
-	screen -d -m rtorrent windows.img.torrent linux.tar.torrent
+    #Se usuário cancelar volta para menu.
+	trap "killall rtorrent" 2 15
 
-	#Baixa arquivo de configuraçao atualizado.
-	wget http://$servidor/riso.conf -O /usr/riso/riso.conf
-
-	echo "Baixando imagens..."
 	# Loop que aguarda o torrent ser concluido.
 	# Compara o tamanho do arquivo que esta sendo baixado pelo rtorrent
 	# com o tamanho total no arquivo riso.service.
-	sizelocwin="0"
-	sizeloclin="0"
-	while [ $sizelocwin != $tamwindows -o $sizeloclin != $tamlinux ]; do
-		sleep 2m
-		sizelocwin=`du $img_win | cut -f1`
-		sizeloclin=`du $img_lin | cut -f1`
-	done
+	(
+	    sizelocwin="0"
+	    sizeloclin="0"
+	    total=((tamwindows+tamlinux))
+	    while [ "$sizelocwin" != "$tamwindows" -o "$sizeloclin" != "$tamlinux" ]; do
+	
+		    # quanto já foi copiado?
+		    [ -e ${img_win} ] && sizelocwin=$(du -s ${img_win} | cut -f1)
+		    [ -e ${img_lin} ] && sizeloclin=$(du -s ${img_lin} | cut -f1)
+            copiado=((sizelocwin+sizeloclin))
+
+		    # qual a porcentagem do total?
+		    PORCENTAGEM=$((copiado*100/total))
+		
+		    # envia a porcentagem para o dialog
+		    echo $PORCENTAGEM
+		
+		    # aguarda até a próxima checagem
+		    sleep 1
+	    done	
+
+	    # cópia finalizada, mostra a porcentagem final
+	    echo 100
+	
+    ) | dialog --title "Baixando imagens..." --gauge "Baixando imagens do Windows e Linux do servidor RISOS para maquina local" 8 50 0
 
 	#Finaliza download
 	killall rtorrent
@@ -124,15 +142,14 @@ baixa_imagem_windows() {
 	rm -f $img_win
 	rm -f $tor_win
 
-	#Inicia doenload da imagen em terminal virtual.
+	#Inicia download da imagen em terminal virtual.
 	scp root@${servidor}:${tor_win} ${tor_win}
 	cd $dir_img
 	screen -d -m rtorrent $tor_win
 	
 	#Se usuario cancelar volta para menu.
-	trap "killall screen" 2 15
+	trap "killall rtorrent" 2 15
 
-	echo "Baixando imagens..."
 	# Loop que aguarda o torrent ser concluido.
 	# Compara o tamanho do arquivo que esta sendo baixado pelo rtorrent
 	# com o tamanho total do arquivo em riso.service.
@@ -156,7 +173,7 @@ baixa_imagem_windows() {
 	    # cópia finalizada, mostra a porcentagem final
 	    echo 100
 	
-    ) | dialog --title "Baixando imagens..." --gauge "Baixando imagem do windows do servidor RISOS para maquina local" 8 50 0
+    ) | dialog --title "Baixando imagem..." --gauge "Baixando imagem do Windows do servidor RISOS para maquina local" 8 50 0
 
 	#Finaliza download
 	killall rtorrent
@@ -165,35 +182,46 @@ baixa_imagem_windows() {
 #Baixa imagem linux.
 baixa_imagem_linux() {
 
-	clear
-
 	echo "Conectando ao servidor..."
 	carrega_variaveis
 
 	#Deleta imagens antigas.
 	echo "Removendo imagem antiga do linux..."
-	rm $img_lin
-	rm $tor_lin
+	rm -f ${img_lin}
+	rm -f ${tor_lin}
 
-	#Baixa novas imagens.
-	wget http://$servidor/linux.tar.torrent -O $tor_lin
+    #Inicia download da imagen em terminal virtual.
+	scp root@${servidor}:${tor_lin} ${tor_lin}
+	cd ${dir_img}
+	screen -d -m rtorrent ${tor_lin}
 	
-	cd /usr/riso/imagens/
-	screen -d -m rtorrent linux.tar.torrent
+	#Se usuário cancelar volta para menu.
+	trap "killall rtorrent" 2 15
 
-	#Baixa arquivo de configuraçao atualizado.
-	wget http://$servidor/riso.conf -O /usr/riso/riso.conf
-
-	echo "Baixando imagens..."
-	# Loop que aguarda o torrent ser concluido.
+    # Loop que aguarda o torrent ser concluido.
 	# Compara o tamanho do arquivo que esta sendo baixado pelo rtorrent
-	# com o tamanho total no arquivo riso.conf.
-	sizeloclin="0"
-	while [ $sizeloclin != $tamlinux ]; do
-		sleep 2m
+	# com o tamanho total do arquivo em riso.service.
+    (
+	    sizeloclin="0"
+	    while [ "$sizeloclin" != "$tamlinux" ]; do
+	
+		    # quanto já foi copiado?
+		    [ -e ${img_lin} ] && sizeloclin=$(du -s ${img_lin} | cut -f1)
 
-		sizeloclin=`du $img_lin | cut -f1`
-	done
+		    # qual a porcentagem do total?
+		    PORCENTAGEM=$((sizeloclin*100/tamlinux))
+		
+		    # envia a porcentagem para o dialog
+		    echo $PORCENTAGEM
+		
+		    # aguarda até a próxima checagem
+		    sleep 1
+	    done	
+
+	    # cópia finalizada, mostra a porcentagem final
+	    echo 100
+	
+    ) | dialog --title "Baixando imagem..." --gauge "Baixando imagem do Linux do servidor RISOS para maquina local" 8 50 0
 
 	#Finaliza download
 	killall rtorrent
@@ -228,9 +256,9 @@ baixa_rec() {
 	carrega_variaveis
 
 	#Baixa refaz tabela de partiçao
-	wget $servidor/tab_part
+	scp root@${servidor}:${tab_part} ${tab_part}
 	swapoff -a
-	sfdisk -f /dev/sda < tab_part
+	sfdisk -f /dev/sda < ${tab_part}
 
 	#Desmonta partiçoes
 	umount $partwindows 
@@ -245,10 +273,10 @@ baixa_rec() {
 	swapon $partswap
 
 	#Baixa imagem.tar via scp
-	mkdir /sda4
-	mount $partrec /sda4
-	cd /sda4
-	scp root@$servidor:/usr/riso/imagens/rec.tar .
+	umount /dev/mnt 2> /dev/null
+	mount $partrec /mnt
+	cd /mnt
+	scp root@$servidor:${img_rec} .
 }
 
 #Atualiza R.I.S.O..
