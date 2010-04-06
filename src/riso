@@ -1,12 +1,12 @@
 #!/bin/bash
 
 #Variáveis do script
-$dir_riso=/usr/riso
-$dir_img=$dir_riso/imagens
-$img_win=$dir_img/windows.img
-$img_lin=$dir_img/linux.tar
-$tor_win=$img_win.torrent
-$tor_lin=$img_lin.torrent
+dir_riso=/usr/riso
+dir_img=$dir_riso/imagens
+img_win=$dir_img/windows.img
+img_lin=$dir_img/linux.tar
+tor_win=$img_win.torrent
+tor_lin=$img_lin.torrent
 
 #carrega variaveis do arquivo riso.service para variáveis do sistema.
 carrega_variaveis() {
@@ -115,34 +115,48 @@ baixa_imagens() {
 
 #baixa imagem do Windows.
 baixa_imagem_windows() {
-
-	clear
 	
 	echo "Conectando ao servidor..."
 	carrega_variaveis
 
 	#Deleta imagens antigas.
 	echo "Removendo imagem antiga do windows..."
-	rm $img_win
+	rm -f $img_win
+	rm -f $tor_win
 
-	#Baixa novas imagens.
-	wget http://$servidor/windows.img.torrent -O $tor_win
+	#Inicia doenload da imagen em terminal virtual.
+	scp root@${servidor}:${tor_win} ${tor_win}
+	cd $dir_img
+	screen -d -m rtorrent $tor_win
 	
-	cd /usr/riso/imagens/
-	screen -d -m rtorrent windows.img.torrent
-
-	#Baixa arquivo de configuraçao atualizado.
-	wget http://$servidor/riso.conf -O /usr/riso/riso.conf
+	#Se usuario cancelar volta para menu.
+	trap "killall screen" 2 15
 
 	echo "Baixando imagens..."
 	# Loop que aguarda o torrent ser concluido.
 	# Compara o tamanho do arquivo que esta sendo baixado pelo rtorrent
-	# com o tamanho total no arquivo riso.conf.
-	sizelocwin="0"
-	while [ $sizelocwin != $tamwindows ]; do
-		sleep 2m
-		sizelocwin=`du $img_win | cut -f1`
-	done
+	# com o tamanho total do arquivo em riso.service.
+    (
+	    sizelocwin="0"
+	    while [ "$sizelocwin" != "$tamwindows" ]; do
+	
+		    # quanto já foi copiado?
+		    [ -e ${img_win} ] && sizelocwin=$(du -s $img_win | cut -f1)
+
+		    # qual a porcentagem do total?
+		    PORCENTAGEM=$((sizelocwin*100/tamwindows))
+		
+		    # envia a porcentagem para o dialog
+		    echo $PORCENTAGEM
+		
+		    # aguarda até a próxima checagem
+		    sleep 1
+	    done	
+
+	    # cópia finalizada, mostra a porcentagem final
+	    echo 100
+	
+    ) | dialog --title "Baixando imagens..." --gauge "Baixando imagem do windows do servidor RISOS para maquina local" 8 50 0
 
 	#Finaliza download
 	killall rtorrent
