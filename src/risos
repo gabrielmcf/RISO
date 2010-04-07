@@ -288,7 +288,7 @@ menu() {
 		dialog --stdout                             \
 		--ok-label 'Confirmar'                      \
 		--cancel-label 'Sair'                       \
-		--title 'RISOS - 0.4'                       \
+		--title 'RISOS - 0.5'                       \
 		--menu 'Escolha o que voce quer fazer:'     \
 			0 0 0                               \
 			1 'Iniciar servidor'                \

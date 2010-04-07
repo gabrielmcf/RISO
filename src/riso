@@ -13,7 +13,7 @@ tab_part=$dir_img/tab_part
 #carrega variaveis do arquivo riso.service para variáveis do sistema.
 carrega_variaveis() {
     avahi_saida=`avahi-browse -rtp _RISO._tcp | grep '='`
-    servidor=`cut -d ';' -f8 <<< ${avahi_saida}`
+    servidor=`cut -d ';' -f8 <<< ${avahi_saida}` #ip do servidor.
     if [ -z $servidor ]; then
         dialog \
         --title 'Atencao' \
@@ -23,12 +23,16 @@ carrega_variaveis() {
         clear
         exit 1
     fi
-    partwindows=`(cut -d ';' -f10 | cut -d '"' -f2 | cut -d '=' -f2) <<< ${avahi_saida}`
-    partlinux=`(cut -d ';' -f10 | cut -d '"' -f4 | cut -d '=' -f2) <<< ${avahi_saida}`
-    partrec=`(cut -d ';' -f10 | cut -d '"' -f6 | cut -d '=' -f2) <<< ${avahi_saida}`
-    partswap=`(cut -d ';' -f10 | cut -d '"' -f8 | cut -d '=' -f2) <<< ${avahi_saida}`   
+    partwindows=`(cut -d ';' -f10 | cut -d '"' -f2 | cut -d '=' -f2) <<< ${avahi_saida}` #Partição com Windows.
+    partlinux=`(cut -d ';' -f10 | cut -d '"' -f4 | cut -d '=' -f2) <<< ${avahi_saida}` #Partição com Linux.
+    partrec=`(cut -d ';' -f10 | cut -d '"' -f6 | cut -d '=' -f2) <<< ${avahi_saida}` #Partição de Recuperação.
+    partswap=`(cut -d ';' -f10 | cut -d '"' -f8 | cut -d '=' -f2) <<< ${avahi_saida}` #Partição Swap.
+
+    #Tamanho total das imagens criadas no servidor.
     tamwindows=`(cut -d ';' -f10 | cut -d '"' -f10 | cut -d '=' -f2) <<< ${avahi_saida}`
     tamlinux=`(cut -d ';' -f10 | cut -d '"' -f12 | cut -d '=' -f2) <<< ${avahi_saida}`
+
+    #Sistema de arquivo das partições.
     sa_partwindows=`(cut -d ';' -f10 | cut -d '"' -f14 | cut -d '=' -f2) <<< ${avahi_saida}`
     sa_partlinux=`(cut -d ';' -f10 | cut -d '"' -f16 | cut -d '=' -f2) <<< ${avahi_saida}`
     sa_partrec=`(cut -d ';' -f10 | cut -d '"' -f18 | cut -d '=' -f2) <<< ${avahi_saida}`
@@ -96,7 +100,7 @@ baixa_imagens() {
 	screen -d -m rtorrent ${tor_win} ${tor_lin}
 
     #Se usuário cancelar volta para menu.
-	trap "killall rtorrent" 2 15
+	trap "killall rtorrent; clear; exit" 2 15
 
 	# Loop que aguarda o torrent ser concluido.
 	# Compara o tamanho do arquivo que esta sendo baixado pelo rtorrent
@@ -104,13 +108,13 @@ baixa_imagens() {
 	(
 	    sizelocwin="0"
 	    sizeloclin="0"
-	    total=((tamwindows+tamlinux))
+	    total=$((tamwindows+tamlinux))
 	    while [ "$sizelocwin" != "$tamwindows" -o "$sizeloclin" != "$tamlinux" ]; do
 	
 		    # quanto já foi copiado?
 		    [ -e ${img_win} ] && sizelocwin=$(du -s ${img_win} | cut -f1)
 		    [ -e ${img_lin} ] && sizeloclin=$(du -s ${img_lin} | cut -f1)
-            copiado=((sizelocwin+sizeloclin))
+            copiado=$((sizelocwin+sizeloclin))
 
 		    # qual a porcentagem do total?
 		    PORCENTAGEM=$((copiado*100/total))
@@ -148,7 +152,7 @@ baixa_imagem_windows() {
 	screen -d -m rtorrent $tor_win
 	
 	#Se usuario cancelar volta para menu.
-	trap "killall rtorrent" 2 15
+	trap "killall rtorrent; clear; exit" 2 15
 
 	# Loop que aguarda o torrent ser concluido.
 	# Compara o tamanho do arquivo que esta sendo baixado pelo rtorrent
@@ -196,7 +200,7 @@ baixa_imagem_linux() {
 	screen -d -m rtorrent ${tor_lin}
 	
 	#Se usuário cancelar volta para menu.
-	trap "killall rtorrent" 2 15
+	trap "killall rtorrent; clear; exit" 2 15
 
     # Loop que aguarda o torrent ser concluido.
 	# Compara o tamanho do arquivo que esta sendo baixado pelo rtorrent
@@ -231,14 +235,15 @@ baixa_imagem_linux() {
 instala_rec() {
 
 	#Instala imagem
-	tar -xvf rec.tar
+	tar -xvfp rec.tar
 	
 	#instala o grub
-	chroot /sda4 grub-install /dev/sda
+	chroot /mnt grub-install /dev/sda
 
 	#Verifica se a instalaçao foi concluida con sucesso
-	if [ -e /sda4/vmlinuz ]
+	if [ -e /mnt/vmlinuz ]
 	then
+	    clear
 		reboot
 	else
 		echo " "
@@ -260,23 +265,19 @@ baixa_rec() {
 	swapoff -a
 	sfdisk -f /dev/sda < ${tab_part}
 
-	#Desmonta partiçoes
-	umount $partwindows 
-	umount $partlinux
-	umount $partrec  
-	umount $partswap
+	#Desmonta partição
+	umount ${partrec} 2> /dev/null 
 
-	#Formata partiçoes 
-	mkfs.ext3 $partlinux
-	mkfs.ext3 $partrec
-	mkswap $partswap
-	swapon $partswap
+	#Formata partição 
+	mkfs.${sa_partrec} ${partrec}
+	mkswap ${partswap}
+	swapon ${partswap}
 
-	#Baixa imagem.tar via scp
+	#Baixa imagem .tar via scp
 	umount /dev/mnt 2> /dev/null
-	mount $partrec /mnt
+	mount ${partrec} /mnt
 	cd /mnt
-	scp root@$servidor:${img_rec} .
+	scp root@${servidor}:${img_rec} .
 }
 
 #Atualiza R.I.S.O..
@@ -291,8 +292,8 @@ atualiza() {
 		dialog \
 		--ok-label 'OK' \
 		--title 'ERRO' \
-		--msgbox 'Não foi possível estabelecer conexão com o servidor'\
-		0 0
+		--msgbox '\n   Esta versão já é a mais recente'\
+		7 40
 	fi
 }
 
@@ -359,7 +360,7 @@ menu_baixa_imagens() {
 	case $opcao in
 		'"Windows"') baixa_imagem_windows; instala_windows; reboot;;
 		'"Linux"') baixa_imagem_linux; instala_linux; reboot;;
-		'"Windows" "Linux"') baixa_imagens; instala; reboot;;
+		'"Windows" "Linux"') baixa_imagens && instala && echo "PACUMÂ";;
 	esac
 }
 
@@ -371,7 +372,7 @@ menu() {
 		dialog --stdout                                             \
 		--ok-label 'Confirmar'                                      \
 		--cancel-label 'Sair'                                       \
-		--title 'RISO - 0.4a'                                       \
+		--title 'RISO - 0.5'                                       \
 		--menu 'Escolha o que voce quer fazer:'                     \
 			0 0 0                                               \
 			1 'Instalar imagens ja existentes'                  \
