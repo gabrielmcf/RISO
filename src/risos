@@ -5,57 +5,87 @@ dir_riso=/usr/riso
 dir_img=$dir_riso/imagens
 img_win=$dir_img/windows.img
 img_lin=$dir_img/linux.tar
+img_rec=$dir_img/rec.tar
 tor_win=$img_win.torrent
 tor_lin=$img_lin.torrent
+riso_service=/etc/avahi/services/riso.service
+tab_part=$dir_img/tab_part
 
+#Carrega variaveis do arquivo riso.service para variáveis do sistema.
+carrega_variaveis() {
+
+    avahi_saida=`avahi-browse -rtp _RISO._tcp | grep '='`
+    servidor=`cut -d ';' -f8 <<< ${avahi_saida}` #ip do servidor.
+    if [ -z $servidor ]; then
+        dialog \
+        --title 'Atencao' \
+        --ok-label 'OK' \
+        --msgbox 'O servidor RISOS precisa estar conectado à rede.\nVerifique a conexão e tente novamente.' \
+        7 45
+        return 1
+    fi
+    partwindows=`(cut -d ';' -f10 | cut -d '"' -f2 | cut -d '=' -f2) <<< ${avahi_saida}` #Partição com Windows.
+    partlinux=`(cut -d ';' -f10 | cut -d '"' -f4 | cut -d '=' -f2) <<< ${avahi_saida}` #Partição com Linux.
+    partrec=`(cut -d ';' -f10 | cut -d '"' -f6 | cut -d '=' -f2) <<< ${avahi_saida}` #Partição de Recuperação.
+    partswap=`(cut -d ';' -f10 | cut -d '"' -f8 | cut -d '=' -f2) <<< ${avahi_saida}` #Partição Swap.
+
+    #Tamanho total das imagens criadas no servidor.
+    tamwindows=`(cut -d ';' -f10 | cut -d '"' -f10 | cut -d '=' -f2) <<< ${avahi_saida}`
+    tamlinux=`(cut -d ';' -f10 | cut -d '"' -f12 | cut -d '=' -f2) <<< ${avahi_saida}`
+
+    #Sistema de arquivo das partições.
+    sa_partwindows=`(cut -d ';' -f10 | cut -d '"' -f14 | cut -d '=' -f2) <<< ${avahi_saida}`
+    sa_partlinux=`(cut -d ';' -f10 | cut -d '"' -f16 | cut -d '=' -f2) <<< ${avahi_saida}`
+    sa_partrec=`(cut -d ';' -f10 | cut -d '"' -f18 | cut -d '=' -f2) <<< ${avahi_saida}`
+}
 
 #Inicia tracker para disponibilizar imagens na rede.
 inicia_servidor() {
-	if [ -e $img_win -a -e $img_lin ]
-	then
+	if [ -e ${img_win} -a -e ${img_lin} ]; then
 		bttrack --port 6969 --dfile dstate | grep pog &
-		cd /usr/riso/imagens	
-		rtorrent linux.tar.torrent windows.img.torrent
+		cd ${dir_img}	
+		rtorrent ${tor_lin} ${tor_win}
 	else
 		dialog \
 		--title 'Atenção' \
 		--ok-label 'OK' \
-		--msgbox 'Não existem imagens prontas' \
-		0 0
+		--msgbox '\n   Não existem imagens prontas.' \
+		7 40
+		return 2
 	fi
 	
 }
 
 #Inicia tracker para disponibilizar imagem do Windows na rede.
 inicia_servidor_windows() {
-	if [ -e $img_win ]
-	then
+	if [ -e ${img_win} ]; then
 		bttrack --port 6969 --dfile dstate | grep pog &
-		cd /usr/riso/imagens
-		rtorrent windows.img.torrent
+		cd ${dir_img}
+		rtorrent ${tor_win}
 	else
 		dialog \
 		--title 'Atenção' \
 		--ok-label 'OK' \
-		--msgbox 'Você ainda não criou a imagem do windows' \
-		0 0
+		--msgbox '\nVocê ainda não criou a imagem do windows.' \
+		7 45
+		return 2
 	fi
 	
 }
 
 #Inicia tracker para disponibilizar imagem do Linux na rede.
 inicia_servidor_linux() {
-	if [ -e $img_lin ]
-	then
+	if [ -e ${img_lin} ]; then
 		bttrack --port 6969 --dfile dstate | grep laialadaiasabadanaavemaria &
-		cd /usr/riso/imagens		
-		rtorrent linux.tar.torrent
+		cd ${dir_img}		
+		rtorrent ${tor_lin}
 	else
 		dialog \
 		--title 'Atenção' \
 		--ok-label 'OK' \
-		--msgbox 'Você ainda não criou a imagem do linux' \
-		0 0
+		--msgbox '\nVocê ainda não criou a imagem do linux.' \
+		7 44
+		return 2
 	fi
 
 }
@@ -63,132 +93,133 @@ inicia_servidor_linux() {
 #Cria imagem do Linux.
 cria_linux() {
 
-	clear
 	echo "Removendo imagem antiga do linux..."
-	rm $img_lin 
-	rm $tor_lin
-	rm /var/www/linux.tar.torrent
-	mount $partlinux /mnt
+	rm -f ${img_lin}
+	rm -f ${tor_lin}
+	
+	#Cria arquivo .tar do linux
+	umount /mnt 2> /dev/null
+	mount ${partlinux} /mnt
 	cd /mnt
-	tar -cvf $img_lin *
-	umount /mnt
+	tar -cvf ${img_lin} *
 	
-	#Escreve o ip do servidor no riso.conf
-	servidor=`ifconfig eth0 | grep "inet end" | awk '{print $3}'`
-	sed s/servidor=[1234567890.]*/servidor=$servidor/ < /usr/riso/riso.conf > /usr/riso/riso.tmp
-	mv /usr/riso/riso.tmp /usr/riso/riso.conf
-
-	btmakemetafile.bittorrent $img_lin http://$servidor:6969/announce
-	cp $tor_lin /var/www
+	#Atualiza Sistema de arquivo da partição no riso.service
+	sa_partlinux=`df -T ${partlinux} | awk 'NR==2{print $2}'`
+	sed "s/sa_partlinux=[^<]*/sa_partlinux=${sa_partlinux}/" < ${riso_service} > ${riso_service}.tmp
 	
-	tamlin=`ls -l $img_lin | awk '{print $5}'`
-	sed "s/tamlinux=[1234567890]*/tamlinux=$tamlin/" < /usr/riso/riso.conf > /usr/riso/riso.tmp
-	mv /usr/riso/riso.tmp /usr/riso/riso.conf
+	umount /mnt 2> /dev/null
 	
-	cp /usr/riso/riso.conf /var/www/riso.conf
-	chmod a+x /var/www/riso.conf
 }
 
 cria_torrent_linux() {
-
-	clear
-
-	#Escreve o ip do servidor no riso.conf
-	servidor=`ifconfig eth0 | grep "inet end" | awk '{print $3}'`
-	sed s/servidor=[1234567890.]*/servidor=$servidor/ < /usr/riso/riso.conf > /usr/riso/riso.tmp
-	mv /usr/riso/riso.tmp /usr/riso/riso.conf
 	
-	#Cria o torrent e copia pro www
-	btmakemetafile.bittorrent $img_lin http://$servidor:6969/announce
-	cp $tor_lin /var/www
+	if [ -e $img_lin ]; then
+	    #Cria o torrent
+	    btmakemetafile.bittorrent ${img_lin} http://${servidor}:6969/announce 2> /dev/null
 	
-	#Escreve o tamanho da imagem no riso.conf
-	tamlin=`ls -l $img_lin | awk '{print $5}'`
-	sed "s/tamlinux=[1234567890]*/tamlinux=$tamlin/" < /usr/riso/riso.conf > /usr/riso/riso.tmp
-	mv /usr/riso/riso.tmp /usr/riso/riso.conf
-
-	#Copia e muda a permissão do riso.conf no www
-	cp /usr/riso/riso.conf /var/www/riso.conf
-	chmod a+x /var/www/riso.conf
+	    #Escreve o tamanho da imagem no riso.service
+	    tam=`du -b ${img_lin} | cut -f1`
+	    sed "s/tamlinux=[0-9]*/tamlinux=${tam}/" < ${riso_service} > ${riso_service}.tmp
+	    mv ${riso_service}.tmp ${riso_service}
+	else
+        dialog \
+        --title 'Atenção' \
+        --ok-label 'OK' \
+        --msgbox '\nVocê ainda não criou a imagem do linux.' \
+        7 44
+        return 2
+	fi
+	
 }
 
 #Cria imagem do Windows.
 cria_windows() {
 	
-	clear
-
 	echo "Removendo imagem antiga do windows..."
-	rm $img_win
-	rm $tor_win
-	rm /var/www/windows.img.torrent
+	rm -f ${img_win}
+    rm -f ${tor_win}
+
+    #Cria arquivo .img do windows
+    umount ${partwindows} 2> /dev/null
+    ntfsclone -s -O ${img_win} ${partwindows}
+    
+    #Se não conseguiu criar a imagem
+    if [ "$?" -ne "0" ]; then
+        dialog \
+        --title 'Atenção' \
+        --ok-label 'OK' \
+        --msgbox 'Não consegui criar uma imagem do Windows.\n
+O sistema operacional pode ainda não ter sido instalado.\n
+A partição ou o sistema de arquivo indicados pelas variáveis\n
+partwindows e sa_partwindows em /etc/avahi/services/riso.service\n
+pode estar incorreta.\n' \
+        0 0
+        return 3
+    fi
+    #Atualiza Sistema de arquivo da partição no riso.service
+    mount ${partwindows} /mnt
+	sa_partwindows=`df -T ${partwindows} | awk 'NR==2{print $2}'`
+	echo $sa_partwindows
+	echo $partwindows
+	sed "s/sa_partwindows=[^<]*/sa_partwindows=${sa_partwindows}/" < ${riso_service} > ${riso_service}.tmp
+	umount /mnt 2> /dev/null
 	
-	ntfsclone -s -O $img_win $partwindows
-	
-	#Escreve o ip do servidor no riso.conf
-	servidor=`ifconfig eth0 | grep "inet end" | awk '{print $3}'`
-	sed s/servidor=[1234567890.]*/servidor=$servidor/ < /usr/riso/riso.conf > /usr/riso/riso.tmp
-	mv /usr/riso/riso.tmp /usr/riso/riso.conf
-	
-	btmakemetafile.bittorrent $img_win http://$servidor:6969/announce
-	cp $tor_win /var/www
-	
-	tamwin=`ls -l $img_win | awk '{print $5}'`
-	sed "s/tamwindows=[1234567890]*/tamwindows=$tamwin/" < /usr/riso/riso.conf > /usr/riso/riso.tmp
-	mv /usr/riso/riso.tmp /usr/riso/riso.conf
-	
-	cp /usr/riso/riso.conf /var/www/riso.conf
-	chmod a+x /var/www/riso.conf
 }
 
 #Cria imagem do Windows.
 cria_torrent_windows() {
 	
-	clear
-	
-	#Escreve o ip do servidor no riso.conf
-	servidor=`ifconfig eth1 | grep "inet end" | awk '{print $3}'`
-	sed s/servidor=[1234567890.]*/servidor=$servidor/ < /usr/riso/riso.conf > /usr/riso/riso.tmp
-	mv /usr/riso/riso.tmp /usr/riso/riso.conf
-	
-	btmakemetafile.bittorrent $img_win http://$servidor:6969/announce
-	cp $tor_win /var/www
-	
-	tamwin=`ls -l $img_win | awk '{print $5}'`
-	sed "s/tamwindows=[1234567890]*/tamwindows=$tamwin/" < /usr/riso/riso.conf > /usr/riso/riso.tmp
-	mv /usr/riso/riso.tmp /usr/riso/riso.conf
-	
-	cp /usr/riso/riso.conf /var/www/riso.conf
-	chmod a+x /var/www/riso.conf
+	if [ -e ${img_win} ]; then
+        btmakemetafile.bittorrent ${img_win} http://${servidor}:6969/announce 2> /dev/null
+        cp $tor_win /var/www
+
+        tam=`du -b ${img_win} | cut -f1`
+        sed "s/tamwindows=[0-9]*/tamwindows=${tam}/" < ${riso_service} > ${riso_service}.tmp
+	    mv ${riso_service}.tmp ${riso_service}
+    else
+        dialog \
+        --title 'Atenção' \
+        --ok-label 'OK' \
+        --msgbox '\nVocê ainda não criou a imagem do windows.' \
+        7 45
+        return 2
+    fi
 }
 
 #Cria imagem do SO com R.I.S.O. instalado..
 cria_rec() {
 
-	clear
-
 	echo "Removendo imagem antiga do windows..."
-	rm -f $img_win
-	rm -f $tor_win
+	rm -f ${img_win}
+	rm -f ${tor_win}
 	echo "Removendo imagem antiga do linux..."
-	rm -f $img_lin
-	rm -f $tor_lin
+	rm -f ${img_lin}
+	rm -f ${tor_lin}
 	echo "Removendo imagem antiga do linux de recuperação..."
-	rm -f /usr/riso/imagens/rec.tar
-	sfdisk -d /dev/sda > /usr/riso/tab_part
+	rm -f ${img_rec}
+	sfdisk -d /dev/sda > ${tab_part}
 	cd /
-	tar -cvf /usr/riso/imagens/rec.tar *
+	tar -cvf ${img_rec} *
+	
+	#Atualiza Sistema de arquivo da partição no riso.service
+    sa_partrec=`df -T ${partrec} | awk 'NR==2{print $2}'`
+    sed "s/sa_partrec=[^<]*/sa_partrec=${sa_partrec}/" < ${riso_service} > ${riso_service}.tmp
+	
 }
 
 #Atualiza riso.
 atualiza() {
-	wget 200.131.37.236/riso/risos -O /usr/riso/risos
-	wget 200.131.37.236/riso/riso.conf -O /usr/riso/riso.conf
-	bash /usr/riso/risos
-	exit
+    
+    dialog \
+    --ok-label 'OK' \
+    --title 'ERRO' \
+    --msgbox '\n   Esta versão já é a mais recente'\
+    7 40
 }
 
 #Pessoas que desenvolveram esse material.
 creditos() {
+	
 	dialog \
 	--ok-label 'OK' \
 	--title 'Creditos' \
@@ -210,18 +241,19 @@ creditos() {
 
 #Acredite isso é um help.
 helpi() {
+
 	dialog \
 	--ok-label 'OK' \
 	--title 'Help' \
-	--msgbox '                                       \n
-		Envie um e-mail com suas duvidas e sugestões \n
-		para: "germano@comp.eng.br" e reponderei o   \n
-		mais rápido possível.'                    \
+	--msgbox 'Envie um e-mail com suas duvidas e sugestões \n
+para: "germano@comp.eng.br" e reponderei o\n
+mais rápido possível.' \
 		0 0
 }
 
 #Checklist de seleção.
 menu_inicia_servidor() {
+
 	opcao=$( dialog --stdout \
 	--ok-label 'Confirmar'   \
 	--checklist 'Quais imagens deseja disponibilizar para o download na rede:' \
@@ -239,6 +271,7 @@ menu_inicia_servidor() {
 
 #Checklist de seleção.
 menu_criar_imagens() {
+
 	opcao=$( dialog --stdout \
 	--ok-label 'Confirmar'   \
 	--checklist 'Quais imagens deseja criar:' \
@@ -249,47 +282,44 @@ menu_criar_imagens() {
 
 	# De acordo com a opção escolhida, executa funcoes
 	case $opcao in
-		'"Windows"') cria_windows;;
-		'"Linux"') cria_linux;;
+		'"Windows"') cria_windows && cria_torrent_windows;;
+		'"Linux"') cria_linux && cria_torrent_linux;;
 		'"Recuperacao"') cria_rec;;
-		'"Windows" "Linux"') cria_windows; cria_linux;;
-		'"Windows" "Recuperacao"') cria_rec; cria_windows;;
-		'"Linux" "Recuperacao"') cria_rec; cria_linux;;
-		'"Windows" "Linux" "Recuperacao"') cria_rec; cria_windows; cria_linux;;
+		'"Windows" "Linux"') cria_windows && cria_torrent_windows && cria_linux && cria_torrent_linux;;
+		'"Windows" "Recuperacao"') cria_rec && cria_windows && cria_torrent_windows;;
+		'"Linux" "Recuperacao"') cria_rec && cria_linux && cria_torrent_linux;;
+		'"Windows" "Linux" "Recuperacao"') cria_rec && cria_windows && cria_torrent_windows && cria_linux && cria_torrent_linux;;
 	esac
 }
 
 #Checklist de seleção.
 menu_criar_torrents() {
+
 	opcao=$( dialog --stdout \
 	--ok-label 'Confirmar'   \
 	--checklist 'Quais torrents deseja criar:' \
 	0 0 0 \
 	Windows '' ON  \
-	Linux '' ON  \
-	Recuperacao '' off )
+	Linux '' ON  )
 
-# De acordo com a opção escolhida, executa funcoes
+    # De acordo com a opção escolhida, executa funcoes
 	case $opcao in
 		'"Windows"') cria_torrent_windows;;
 		'"Linux"') cria_torrent_linux;;
-		'"Recuperacao"') cria_torrent_rec;;
-		'"Windows" "Linux"') cria_torrent_windows; cria_torrent_linux;;
-		'"Windows" "Recuperacao"') cria_torrent_rec; cria_torrent_windows;;
-		'"Linux" "Recuperacao"') cria_torrent_rec; cria_torrent_linux;;
-		'"Windows" "Linux" "Recuperacao"') cria_torrent_rec; cria_torrent_windows; cria_torrent_linux;;
+		'"Windows" "Linux"') cria_torrent_windows && cria_torrent_linux;;
 	esac
 }
 
 #Menu pricipal.
 menu() {
+
 	while : ; do
 	opcao=$(
-		dialog --stdout                             \
-		--ok-label 'Confirmar'                      \
-		--cancel-label 'Sair'                       \
-		--title 'RISOS - 0.5'                       \
-		--menu 'Escolha o que voce quer fazer:'     \
+		dialog --stdout                         \
+		--ok-label 'Confirmar'                  \
+		--cancel-label 'Sair'                   \
+		--title 'RISOS - 0.5'                   \
+		--menu 'Escolha o que voce quer fazer:' \
 			0 0 0                               \
 			1 'Iniciar servidor'                \
 			2 'Criar imagens'                   \
@@ -314,9 +344,10 @@ menu() {
 	done
 }
 
+#Verifica se usuário é root
 USER=`id -u`
 if [ $USER == '0' ]; then
-	menu
+    carrega_variaveis && menu
 	clear
 else
 	echo 'Só o root pode fazer isso, jovenzinho!'

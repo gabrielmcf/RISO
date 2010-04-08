@@ -83,19 +83,19 @@ instala_risos() {
     echo -n "Qual a partição em que o área de troca(swap) foi instalado(Ex: /dev/sda3):"
     read partswap
     
-    umount /dev/mnt 2> /dev/null
+    umount /mnt 2> /dev/null
     mount ${partrec} /mnt
     sa_partrec=`df -T ${partrec} | awk 'NR==2{print $2}'`
     
-    umount /dev/mnt 2> /dev/null
+    umount /mnt 2> /dev/null
     mount ${partlinux} /mnt
     sa_partlinux=`df -T ${partlinux} | awk 'NR==2{print $2}'`
     
-    umount /dev/mnt 2> /dev/null
+    umount /mnt 2> /dev/null
     mount ${partwindows} /mnt
     sa_partwindows=`df -T ${partwindows} | awk 'NR==2{print $2}'`
 
-    umount /dev/mnt 2> /dev/null
+    umount /mnt 2> /dev/null
     
     echo "Criando arquivo de configuração..."
     echo '<?xml version="1.0" standalone="no"?><!--*-nxml-*-->' > /etc/avahi/services/riso.service

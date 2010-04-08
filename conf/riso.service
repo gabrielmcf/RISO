@@ -1,4 +1,4 @@
-<?xml version="1.0" standalone='no'?><!--*-nxml-*-->
+<?xml version="1.0" standalone="no"?><!--*-nxml-*-->
 <!DOCTYPE service-group SYSTEM "avahi-service.dtd">
 
 <!--riso.service -->
@@ -9,28 +9,30 @@
   Para mais informações sobre o processo ver http://avahi.org
 -->
 
-
 <service-group>
-
   <name>Servidor RISO</name>
 
   <service>
-     <!--Nome do serviço-->
+    <!--Nome do serviço-->
     <type>_RISO._tcp</type>
 
     <!--Campo não é usado-->
     <port>1234</port>
+
+    <!--Variáveis com sistema de arquivo das partições-->
+    <txt-record>sa_partrec=ext3</txt-record>
+    <txt-record>sa_partlinux=ext3</txt-record>
+    <txt-record>sa_partwindows=vfat</txt-record>
 
     <!--Variáveis com tamanho das imagens geradas no servidor-->
     <txt-record>tamlinux=123456789</txt-record>
     <txt-record>tamwindows=123456789</txt-record>
 
     <!--Localização dos sistemas operacionais no HD-->
-    <txt-record>partswap=/dev/sda2</txt-record>
+    <txt-record>partswap=/dev/sda3</txt-record>
     <txt-record>partrec=/dev/sda4</txt-record>
     <txt-record>partlinux=/dev/sda3</txt-record>
-    <txt-record>pratwindows=/dev/sda1</txt-record>
+    <txt-record>partwindows=/dev/sda1</txt-record>
 
   </service>
-
 </service-group>

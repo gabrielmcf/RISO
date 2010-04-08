@@ -10,8 +10,9 @@ tor_win=$img_win.torrent
 tor_lin=$img_lin.torrent
 tab_part=$dir_img/tab_part
 
-#carrega variaveis do arquivo riso.service para variáveis do sistema.
+#Carrega variaveis do arquivo riso.service para variáveis do sistema.
 carrega_variaveis() {
+
     avahi_saida=`avahi-browse -rtp _RISO._tcp | grep '='`
     servidor=`cut -d ';' -f8 <<< ${avahi_saida}` #ip do servidor.
     if [ -z $servidor ]; then
@@ -20,8 +21,7 @@ carrega_variaveis() {
         --ok-label 'OK' \
         --msgbox 'Não existe nenhum servidor RISOS ativo na rede.\nVerifique a conexão e tente novamente.' \
         0 0
-        clear
-        exit 1
+        return 1
     fi
     partwindows=`(cut -d ';' -f10 | cut -d '"' -f2 | cut -d '=' -f2) <<< ${avahi_saida}` #Partição com Windows.
     partlinux=`(cut -d ';' -f10 | cut -d '"' -f4 | cut -d '=' -f2) <<< ${avahi_saida}` #Partição com Linux.
@@ -40,9 +40,10 @@ carrega_variaveis() {
 
 #Instala imagens do Linux e do Windows.
 instala() {
+
 	#Desmonta partiçoes.
-	umount $partwindows
-	umount $partlinux
+	umount $partwindows 2> /dev/null
+	umount $partlinux 2> /dev/null
 
 	#Clona windows.
 	ntfsclone -r $img_win -O $partwindows
@@ -53,13 +54,13 @@ instala() {
 	cd /mnt
 	tar -xvf $img_lin
 	cd ..
-	umount /mnt
+	umount /mnt 2> /dev/null
 }
 
 #Instala imagem do Windows.
 instala_windows() {
 	#Desmonta partiçoes
-	umount $partwindows
+	umount $partwindows 2> /dev/null
 
 	#Clona windows
 	ntfsclone -r $img_win -O $partwindows
@@ -68,7 +69,7 @@ instala_windows() {
 #Instala imagem do Linux.
 instala_linux() {
 	#desmonta partiçoes.
-	umount $partlinux
+	umount $partlinux 2> /dev/null
 
 	#clona linux
 	mkfs.ext3 $partlinux
@@ -76,14 +77,14 @@ instala_linux() {
 	cd /mnt
 	tar -xvf $img_lin
 	cd ..
-	umount /mnt
+	umount /mnt 2> /dev/null
 }
 
 #Baixa imagens do Linux e do Windows.
 baixa_imagens() {
 	
 	echo "Conectando ao servidor..."
-	carrega_variaveis
+	carrega_variaveis || return 1
 
 	#Deleta imagens antigas.
 	echo "Removendo imagem antiga do windows..."
@@ -112,8 +113,8 @@ baixa_imagens() {
 	    while [ "$sizelocwin" != "$tamwindows" -o "$sizeloclin" != "$tamlinux" ]; do
 	
 		    # quanto já foi copiado?
-		    [ -e ${img_win} ] && sizelocwin=$(du -s ${img_win} | cut -f1)
-		    [ -e ${img_lin} ] && sizeloclin=$(du -s ${img_lin} | cut -f1)
+		    [ -e ${img_win} ] && sizelocwin=$(du -b ${img_win} | cut -f1)
+		    [ -e ${img_lin} ] && sizeloclin=$(du -b ${img_lin} | cut -f1)
             copiado=$((sizelocwin+sizeloclin))
 
 		    # qual a porcentagem do total?
@@ -139,7 +140,7 @@ baixa_imagens() {
 baixa_imagem_windows() {
 	
 	echo "Conectando ao servidor..."
-	carrega_variaveis
+	carrega_variaveis || return 1
 
 	#Deleta imagens antigas.
 	echo "Removendo imagem antiga do windows..."
@@ -162,7 +163,7 @@ baixa_imagem_windows() {
 	    while [ "$sizelocwin" != "$tamwindows" ]; do
 	
 		    # quanto já foi copiado?
-		    [ -e ${img_win} ] && sizelocwin=$(du -s $img_win | cut -f1)
+		    [ -e ${img_win} ] && sizelocwin=$(du -b $img_win | cut -f1)
 
 		    # qual a porcentagem do total?
 		    PORCENTAGEM=$((sizelocwin*100/tamwindows))
@@ -187,7 +188,7 @@ baixa_imagem_windows() {
 baixa_imagem_linux() {
 
 	echo "Conectando ao servidor..."
-	carrega_variaveis
+	carrega_variaveis || return 1
 
 	#Deleta imagens antigas.
 	echo "Removendo imagem antiga do linux..."
@@ -210,7 +211,7 @@ baixa_imagem_linux() {
 	    while [ "$sizeloclin" != "$tamlinux" ]; do
 	
 		    # quanto já foi copiado?
-		    [ -e ${img_lin} ] && sizeloclin=$(du -s ${img_lin} | cut -f1)
+		    [ -e ${img_lin} ] && sizeloclin=$(du -b ${img_lin} | cut -f1)
 
 		    # qual a porcentagem do total?
 		    PORCENTAGEM=$((sizeloclin*100/tamlinux))
@@ -258,7 +259,7 @@ instala_rec() {
 baixa_rec() {
 
 	echo "Conectando ao servidor..."
-	carrega_variaveis
+	carrega_variaveis || return 1
 
 	#Baixa refaz tabela de partiçao
 	scp root@${servidor}:${tab_part} ${tab_part}
@@ -274,7 +275,7 @@ baixa_rec() {
 	swapon ${partswap}
 
 	#Baixa imagem .tar via scp
-	umount /dev/mnt 2> /dev/null
+	umount /mnt 2> /dev/null
 	mount ${partrec} /mnt
 	cd /mnt
 	scp root@${servidor}:${img_rec} .
@@ -284,7 +285,7 @@ baixa_rec() {
 atualiza() {
 		
 	ping -q -c 1 200.131.37.236 > /dev/null 2>&1
-	if [ $? -eq 0 ]; then
+	if [ "$?" -eq "0" ]; then
 		wget 200.131.37.236/riso -O /usr/riso/riso
 		bash /usr/riso/riso
 		exit
@@ -310,6 +311,7 @@ helpi() {
 
 #Pessoas que desenvolveram esse material.
 creditos() {
+
 	dialog \
 	--ok-label 'OK' \
 	--title 'Creditos' \
@@ -332,6 +334,7 @@ creditos() {
 
 #Checklist de seleção.
 menu_instala_imagens() {
+
 	opcao=$( dialog --stdout \
 	--ok-label 'Confirmar'   \
 	--checklist 'Quais imagens deseja instalar:' \
@@ -341,14 +344,15 @@ menu_instala_imagens() {
 
 	# De acordo com a opção escolhida, executa funcoes
 	case $opcao in
-		'"Windows"') instala_windows; reboot;;
-		'"Linux"') instala_linux; reboot;;
-		'"Windows" "Linux"') instala; reboot;;
+		'"Windows"') instala_windows && reboot;;
+		'"Linux"') instala_linux && reboot;;
+		'"Windows" "Linux"') instala && reboot;;
 	esac
 }
 
 #Checklist de seleção.
 menu_baixa_imagens() {
+
 	opcao=$( dialog --stdout \
 	--ok-label 'Confirmar'   \
 	--checklist 'Quais imagens deseja baixar:' \
@@ -358,9 +362,9 @@ menu_baixa_imagens() {
 
 	# De acordo com a opção escolhida, executa funcoes
 	case $opcao in
-		'"Windows"') baixa_imagem_windows; instala_windows; reboot;;
-		'"Linux"') baixa_imagem_linux; instala_linux; reboot;;
-		'"Windows" "Linux"') baixa_imagens && instala && echo "PACUMÂ";;
+		'"Windows"') baixa_imagem_windows && instala_windows && reboot;;
+		'"Linux"') baixa_imagem_linux && instala_linux && reboot;;
+		'"Windows" "Linux"') baixa_imagens && instala && reboot;;
 	esac
 }
 
@@ -369,11 +373,11 @@ menu() {
 
 	while : ; do
 	opcao=$(
-		dialog --stdout                                             \
-		--ok-label 'Confirmar'                                      \
-		--cancel-label 'Sair'                                       \
-		--title 'RISO - 0.5'                                       \
-		--menu 'Escolha o que voce quer fazer:'                     \
+		dialog --stdout                                         \
+		--ok-label 'Confirmar'                                  \
+		--cancel-label 'Sair'                                   \
+		--title 'RISO - 0.5'                                    \
+		--menu 'Escolha o que voce quer fazer:'                 \
 			0 0 0                                               \
 			1 'Instalar imagens ja existentes'                  \
 			2 'Baixar e instalar novas imagens'                 \
@@ -470,7 +474,7 @@ avaliar_args() {
 		done
 		
 		#Executa comando
-		carrega_variaveis
+		carrega_variaveis || return 1
 		for i in $(seq 1 ${argumento[0]}); do
 			if [ ${argumento[$i]} = "--baixa" ]; then
 				until [ $i -eq ${argumento[0]} -o ${argumento[$i]} = "--instala" ]; do
@@ -502,6 +506,7 @@ avaliar_args() {
 	reboot
 }
 
+#Verifica se usuário é root
 USER=`id -u`
 if [ $USER == '0' ]; then  
     avaliar_args $@
