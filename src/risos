@@ -106,6 +106,7 @@ cria_linux() {
 	#Atualiza Sistema de arquivo da partição no riso.service
 	sa_partlinux=`df -T ${partlinux} | awk 'NR==2{print $2}'`
 	sed "s/sa_partlinux=[^<]*/sa_partlinux=${sa_partlinux}/" < ${riso_service} > ${riso_service}.tmp
+	mv ${riso_service}.tmp ${riso_service}
 	
 	umount /mnt 2> /dev/null
 	
@@ -162,6 +163,8 @@ pode estar incorreta.\n' \
 	echo $sa_partwindows
 	echo $partwindows
 	sed "s/sa_partwindows=[^<]*/sa_partwindows=${sa_partwindows}/" < ${riso_service} > ${riso_service}.tmp
+	mv ${riso_service}.tmp ${riso_service}
+	
 	umount /mnt 2> /dev/null
 	
 }
@@ -204,6 +207,7 @@ cria_rec() {
 	#Atualiza Sistema de arquivo da partição no riso.service
     sa_partrec=`df -T ${partrec} | awk 'NR==2{print $2}'`
     sed "s/sa_partrec=[^<]*/sa_partrec=${sa_partrec}/" < ${riso_service} > ${riso_service}.tmp
+    mv ${riso_service}.tmp ${riso_service}
 	
 }
 

@@ -9,6 +9,7 @@ img_rec=$dir_img/rec.tar
 tor_win=$img_win.torrent
 tor_lin=$img_lin.torrent
 tab_part=$dir_img/tab_part
+riso_conf=$dir_riso/riso.conf
 
 #Carrega variaveis do arquivo riso.service para variáveis do sistema.
 carrega_variaveis() {
@@ -41,43 +42,110 @@ carrega_variaveis() {
 #Instala imagens do Linux e do Windows.
 instala() {
 
-	#Desmonta partiçoes.
-	umount $partwindows 2> /dev/null
-	umount $partlinux 2> /dev/null
+    if [ -e ${img_win} -a -e ${img_lin} ]; then
+		#Desmonta partiçoes.
+	    umount $partwindows 2> /dev/null
+	    umount $partlinux 2> /dev/null
 
-	#Clona windows.
-	ntfsclone -r $img_win -O $partwindows
+	    #Clona windows.
+	    ntfsclone -r $img_win -O $partwindows
 
-	#Clona linux.
-	mkfs.ext3 $partlinux
-	mount $partlinux /mnt
-	cd /mnt
-	tar -xvf $img_lin
-	cd ..
-	umount /mnt 2> /dev/null
+	    #Clona linux.
+	    mkfs.ext3 $partlinux
+	    mount $partlinux /mnt
+	    cd /mnt
+	    tar -xvf $img_lin
+	    cd ..
+	    umount /mnt 2> /dev/null
+	    
+	    #verifica se desliga computador
+	    desligar=`grep "DESLIGAR" riso.conf | cut -d'=' -f2`
+	    if [ "$desligar" = "SIM" ]; then
+	        halt
+	    fi
+	
+	    #verifica se reinicia computador
+	    reiniciar=`grep "REINICIAR" riso.conf | cut -d'=' -f2`
+	    if [ "$reiniciar" = "SIM" ]; then
+	        reboot
+	    fi
+	else
+		dialog \
+		--title 'Atenção' \
+		--ok-label 'OK' \
+		--msgbox '\n   Não existem imagens prontas.' \
+		7 40
+		return 5
+	fi    
 }
 
 #Instala imagem do Windows.
 instala_windows() {
-	#Desmonta partiçoes
-	umount $partwindows 2> /dev/null
+    if [ -e ${img_win} ]; then
+		#Desmonta partiçoes
+	    umount $partwindows 2> /dev/null
 
-	#Clona windows
-	ntfsclone -r $img_win -O $partwindows
+	    #Clona windows
+	    ntfsclone -r $img_win -O $partwindows
+	
+	    #verifica se desliga computador
+	    desligar=`grep "DESLIGAR" riso.conf | cut -d'=' -f2`
+	    if [ "$desligar" = "SIM" ]; then
+	        halt
+	    fi
+	
+	    #verifica se reinicia computador
+	    reiniciar=`grep "REINICIAR" riso.conf | cut -d'=' -f2`
+	    if [ "$reiniciar" = "SIM" ]; then
+	        reboot
+	    fi
+	else
+		dialog \
+		--title 'Atenção' \
+		--ok-label 'OK' \
+		--msgbox '\n  Você ainda não baixou a imagem do windows.' \
+		7 50
+		return 5
+	fi
+	    
 }
 
 #Instala imagem do Linux.
 instala_linux() {
-	#desmonta partiçoes.
-	umount $partlinux 2> /dev/null
 
-	#clona linux
-	mkfs.ext3 $partlinux
-	mount $partlinux /mnt
-	cd /mnt
-	tar -xvf $img_lin
-	cd ..
-	umount /mnt 2> /dev/null
+    if [ -e ${img_lin} ]; then
+		#desmonta partiçoes.
+	    umount $partlinux 2> /dev/null
+
+	    #clona linux
+	    mkfs.ext3 $partlinux
+	    mount $partlinux /mnt
+	    cd /mnt
+	    tar -xvf $img_lin
+	    cd ..
+	    umount /mnt 2> /dev/null
+	    
+	    #verifica se desliga computador
+	    desligar=`grep "DESLIGAR" riso.conf | cut -d'=' -f2`
+	    if [ "$desligar" = "SIM" ]; then
+	        halt
+	    fi
+	
+	    #verifica se reinicia computador
+	    reiniciar=`grep "REINICIAR" riso.conf | cut -d'=' -f2`
+	    if [ "$reiniciar" = "SIM" ]; then
+	        reboot
+	    fi
+	else
+		dialog \
+		--title 'Atenção' \
+		--ok-label 'OK' \
+		--msgbox '\n  Você ainda não baixou a imagem do linux.' \
+		7 50
+		return 5
+	fi
+	
+	    
 }
 
 #Baixa imagens do Linux e do Windows.
@@ -85,6 +153,30 @@ baixa_imagens() {
 	
 	echo "Conectando ao servidor..."
 	carrega_variaveis || return 1
+
+    #Vefifica se imagem do windows já é a mais recente
+	sizelocwin="0"
+	[ -e ${img_win} ] && sizelocwin=$(du -b ${img_win} | cut -f1)
+	if [ "$sizelocwin" = "$tamwindows" ]; then
+        dialog \
+        --title 'Atenção' \
+        --ok-label 'OK' \
+        --msgbox '\nA imagem do Windows no computador já é a mais recente.' \
+        7 50
+        return 4
+    fi
+
+    #Vefifica se imagem do linux já é a mais recente
+	sizeloclin="0"
+	[ -e ${img_lin} ] && sizeloclin=$(du -b ${img_lin} | cut -f1)
+	if [ "$sizeloclin" = "$tamlinux" ]; then
+        dialog \
+        --title 'Atenção' \
+        --ok-label 'OK' \
+        --msgbox '\n A imagem do Linux no computador já é a mais recente.' \
+        7 50
+        return 4
+    fi
 
 	#Deleta imagens antigas.
 	echo "Removendo imagem antiga do windows..."
@@ -142,10 +234,22 @@ baixa_imagem_windows() {
 	echo "Conectando ao servidor..."
 	carrega_variaveis || return 1
 
+    #Vefifica se imagem já é a mais recente
+	sizelocwin="0"
+	[ -e ${img_win} ] && sizelocwin=$(du -b ${img_win} | cut -f1)
+	if [ "$sizelocwin" = "$tamwindows" ]; then
+        dialog \
+        --title 'Atenção' \
+        --ok-label 'OK' \
+        --msgbox '\n A imagem no computador já é a mais recente.' \
+        7 50
+        return 4
+    fi
+
 	#Deleta imagens antigas.
 	echo "Removendo imagem antiga do windows..."
-	rm -f $img_win
-	rm -f $tor_win
+	rm -f ${img_win}
+	rm -f ${tor_win}
 
 	#Inicia download da imagen em terminal virtual.
 	scp root@${servidor}:${tor_win} ${tor_win}
@@ -189,6 +293,18 @@ baixa_imagem_linux() {
 
 	echo "Conectando ao servidor..."
 	carrega_variaveis || return 1
+	
+    #Vefifica se imagem já é a mais recente
+	sizeloclin="0"
+	[ -e ${img_lin} ] && sizeloclin=$(du -b ${img_lin} | cut -f1)
+	if [ "$sizeloclin" = "$tamlinux" ]; then
+        dialog \
+        --title 'Atenção' \
+        --ok-label 'OK' \
+        --msgbox '\n A imagem no computador já é a mais recente.' \
+        7 50
+        return 4
+    fi
 
 	#Deleta imagens antigas.
 	echo "Removendo imagem antiga do linux..."
@@ -236,7 +352,7 @@ baixa_imagem_linux() {
 instala_rec() {
 
 	#Instala imagem
-	tar -xvfp rec.tar
+	tar -xvf rec.tar
 	
 	#instala o grub
 	chroot /mnt grub-install /dev/sda
@@ -281,6 +397,19 @@ baixa_rec() {
 	scp root@${servidor}:${img_rec} .
 }
 
+#Define configurações do riso
+configuracoes() {
+    dialog                                          \
+    --title 'AVISO'                              \
+    --yesno '\nAlterar esse arquivo é potencialmente
+             perigoso, se não souber o que esta fazendo pare agora.\n\nDeseja continuar?'    \
+    0 0
+    if [ "$?" -eq "0" ]; then
+		nano $riso_conf
+	fi
+
+}
+
 #Atualiza R.I.S.O..
 atualiza() {
 		
@@ -304,7 +433,7 @@ helpi() {
 	--title 'Help' \
 	--msgbox '                                       \n
 		Envie um e-mail com suas duvidas e sugestões \n
-		para: "germano@comp.eng.br" e reponderei o   \n
+		para: "riso@comp.eng.br" e reponderei o   \n
 		mais rápido possível.'                    \
 		0 0
 }
@@ -344,9 +473,9 @@ menu_instala_imagens() {
 
 	# De acordo com a opção escolhida, executa funcoes
 	case $opcao in
-		'"Windows"') instala_windows && reboot;;
-		'"Linux"') instala_linux && reboot;;
-		'"Windows" "Linux"') instala && reboot;;
+		'"Windows"') instala_windows;;
+		'"Linux"') instala_linux;;
+		'"Windows" "Linux"') instala;;
 	esac
 }
 
@@ -362,9 +491,9 @@ menu_baixa_imagens() {
 
 	# De acordo com a opção escolhida, executa funcoes
 	case $opcao in
-		'"Windows"') baixa_imagem_windows && instala_windows && reboot;;
-		'"Linux"') baixa_imagem_linux && instala_linux && reboot;;
-		'"Windows" "Linux"') baixa_imagens && instala && reboot;;
+		'"Windows"') baixa_imagem_windows && instala_windows;;
+		'"Linux"') baixa_imagem_linux && instala_linux;;
+		'"Windows" "Linux"') baixa_imagens && instala;;
 	esac
 }
 
@@ -383,8 +512,9 @@ menu() {
 			2 'Baixar e instalar novas imagens'                 \
 			3 'Baixar e instalar imagem de recuperação(LIVE_CD)'\
 			4 'Atualiza'                                        \
-			5 'Creditos'                                        \
-			6 'Help'                                            )
+			5 'Configurações'                                   \
+			6 'Creditos'                                        \
+			7 'Help'                                            )
 	
 		# ESC, sai do programa...
 		[ $? -ne 0 ] && break
@@ -395,8 +525,9 @@ menu() {
 		2) menu_baixa_imagens;;
 		3) baixa_rec; instala_rec;;
 		4) atualiza;;
-		5) creditos;;
-		6) helpi;;
+		5) configuracoes;;
+		6) creditos;;
+		7) helpi;;
 	esac	
 
 	done

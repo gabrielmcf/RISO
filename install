@@ -68,6 +68,7 @@ instala_risos() {
     echo "Movendo script..."
     cp ./src/risos /usr/riso/risos
     chmod +x /usr/riso/risos
+    cp ./conf/riso.conf /usr/riso.conf
     
     echo "Gerando chaves rsa..."
     ssh-keygen -t 'rsa' -f '/root/.ssh/id_rsa' -N ''
