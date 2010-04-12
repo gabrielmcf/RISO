@@ -10,6 +10,12 @@ tor_win=$img_win.torrent
 tor_lin=$img_lin.torrent
 tab_part=$dir_img/tab_part
 riso_conf=$dir_riso/riso.conf
+arq_log=$dir_riso/riso.log
+
+#Função de Log
+log(){
+   echo `date +"%F %H:%M:%S"` "$*" >> $arq_log 
+}
 
 #Carrega variaveis do arquivo riso.service para variáveis do sistema.
 carrega_variaveis() {
@@ -22,6 +28,7 @@ carrega_variaveis() {
         --ok-label 'OK' \
         --msgbox 'Não existe nenhum servidor RISOS ativo na rede.\nVerifique a conexão e tente novamente.' \
         0 0
+	log "ERRO: Servidor não encontrado na rede."
         return 1
     fi
     partwindows=`(cut -d ';' -f10 | cut -d '"' -f2 | cut -d '=' -f2) <<< ${avahi_saida}` #Partição com Windows.
@@ -41,32 +48,37 @@ carrega_variaveis() {
 
 #Instala imagens do Linux e do Windows.
 instala() {
-
+    log "Iniciando instalação do Windows e do Linux."
     if [ -e ${img_win} -a -e ${img_lin} ]; then
-		#Desmonta partiçoes.
+	    #Desmonta partiçoes.
 	    umount $partwindows 2> /dev/null
 	    umount $partlinux 2> /dev/null
 
 	    #Clona windows.
-	    ntfsclone -r $img_win -O $partwindows
+	    log "Instalação do Windows iniciada."
+	    (ntfsclone -r $img_win -O $partwindows && log "Fim da instalação do Windows") || log "ERRO: Windows não foi instalado com sucesso."
+	    
 
 	    #Clona linux.
 	    mkfs.ext3 $partlinux
 	    mount $partlinux /mnt
 	    cd /mnt
-	    tar -xvf $img_lin
+	    log "Instalação do Linux iniciada."
+	    (tar -xvf $img_lin && log "Fim da instalação do Linux.") || log "ERRO: Linux não foi instalado com sucesso."
 	    cd ..
 	    umount /mnt 2> /dev/null
 	    
 	    #verifica se desliga computador
 	    desligar=`grep "DESLIGAR" riso.conf | cut -d'=' -f2`
 	    if [ "$desligar" = "SIM" ]; then
+		log "Desligando computador."
 	        halt
 	    fi
 	
 	    #verifica se reinicia computador
 	    reiniciar=`grep "REINICIAR" riso.conf | cut -d'=' -f2`
 	    if [ "$reiniciar" = "SIM" ]; then
+		log "Reiniciando computador."
 	        reboot
 	    fi
 	else
@@ -75,28 +87,33 @@ instala() {
 		--ok-label 'OK' \
 		--msgbox '\n   Não existem imagens prontas.' \
 		7 40
+		log "ERRO: Não existem imagens prontas."
 		return 5
 	fi    
 }
 
 #Instala imagem do Windows.
 instala_windows() {
+    log "Iniciando instalação do Windows"
     if [ -e ${img_win} ]; then
-		#Desmonta partiçoes
+	    #Desmonta partiçoes
 	    umount $partwindows 2> /dev/null
 
 	    #Clona windows
-	    ntfsclone -r $img_win -O $partwindows
+	    log "Instalação do Windows iniciada."
+	    (ntfsclone -r $img_win -O $partwindows && log "Fim da instalação do Windows") || log "ERRO: Windows não instalou com sucesso."
 	
 	    #verifica se desliga computador
 	    desligar=`grep "DESLIGAR" riso.conf | cut -d'=' -f2`
 	    if [ "$desligar" = "SIM" ]; then
+		log "Desligando computador."
 	        halt
 	    fi
 	
 	    #verifica se reinicia computador
 	    reiniciar=`grep "REINICIAR" riso.conf | cut -d'=' -f2`
 	    if [ "$reiniciar" = "SIM" ]; then
+		log "Reiniciando computador."
 	        reboot
 	    fi
 	else
@@ -105,6 +122,7 @@ instala_windows() {
 		--ok-label 'OK' \
 		--msgbox '\n  Você ainda não baixou a imagem do windows.' \
 		7 50
+		log "ERRO: Imagem do Windows ainda não foi baixada."
 		return 5
 	fi
 	    
@@ -112,7 +130,7 @@ instala_windows() {
 
 #Instala imagem do Linux.
 instala_linux() {
-
+    log "Iniciando instalação do Linux."
     if [ -e ${img_lin} ]; then
 		#desmonta partiçoes.
 	    umount $partlinux 2> /dev/null
@@ -121,19 +139,22 @@ instala_linux() {
 	    mkfs.ext3 $partlinux
 	    mount $partlinux /mnt
 	    cd /mnt
-	    tar -xvf $img_lin
+	    log "Instalação do Linux iniciada."
+	    (tar -xvf $img_lin && log "Fim da instalação do Linux.") || log "ERRO: Linux instalou com sucesso."
 	    cd ..
 	    umount /mnt 2> /dev/null
 	    
 	    #verifica se desliga computador
 	    desligar=`grep "DESLIGAR" riso.conf | cut -d'=' -f2`
 	    if [ "$desligar" = "SIM" ]; then
+		log "Desligando computador."
 	        halt
 	    fi
 	
 	    #verifica se reinicia computador
 	    reiniciar=`grep "REINICIAR" riso.conf | cut -d'=' -f2`
 	    if [ "$reiniciar" = "SIM" ]; then
+		log "Reiniciando computador."
 	        reboot
 	    fi
 	else
@@ -142,6 +163,7 @@ instala_linux() {
 		--ok-label 'OK' \
 		--msgbox '\n  Você ainda não baixou a imagem do linux.' \
 		7 50
+		log "Imagem do Linux ainda não foi baixada."
 		return 5
 	fi
 	
@@ -150,7 +172,8 @@ instala_linux() {
 
 #Baixa imagens do Linux e do Windows.
 baixa_imagens() {
-	
+	log "Iniciando download do Linux e do Windows."
+	log "Conectando ao servidor."
 	echo "Conectando ao servidor..."
 	carrega_variaveis || return 1
 
@@ -163,6 +186,7 @@ baixa_imagens() {
         --ok-label 'OK' \
         --msgbox '\nA imagem do Windows no computador já é a mais recente.' \
         7 50
+	log "ERRO: Imagem do Windows já é a mais recente."
         return 4
     fi
 
@@ -175,24 +199,32 @@ baixa_imagens() {
         --ok-label 'OK' \
         --msgbox '\n A imagem do Linux no computador já é a mais recente.' \
         7 50
+	log "ERRO: Imagem do Linux já é a mais recente."
         return 4
     fi
 
 	#Deleta imagens antigas.
-	echo "Removendo imagem antiga do windows..."
+	log "Iniciando remoção da imagem antiga do Windows."
+	echo "Removendo imagem antiga do Windows..."
 	rm -f $img_win
 	rm -f $tor_win
-	echo "Removendo imagem antiga do linux..."
+	log "Fim da remoção da imagem antiga do Windows."
+	log "Inicio da remoção da imagem antiga do Linux."
+	echo "Removendo imagem antiga do Linux..."
 	rm -f $img_lin
 	rm -f $tor_lin
+	log "Fim da remoção da imagem antiga do Linux."
 	
 	#Inicia download das imagens em terminal virtual.
-    scp root@${servidor}:${tor_win} ${tor_win}
-	scp root@${servidor}:${tor_lin} ${tor_lin}
+	log "Iniciando download dos torrent do Windows."
+	(scp root@${servidor}:${tor_win} ${tor_win} && log "Torrent do Windows baixado com sucesso.") || log "ERRO: Torrent do Windows não foi baixado."
+	log "Iniciando download do torrent do Linux."
+	(scp root@${servidor}:${tor_lin} ${tor_lin} && log "Torrent do Linux baixado com sucesso.") || log "ERRO: Torrent do Linux não foi baixado."
 	cd ${dir_img}
+	log "Iniciando download das imagens do Windows e do Linux."
 	screen -d -m rtorrent ${tor_win} ${tor_lin}
 
-    #Se usuário cancelar volta para menu.
+    	#Se usuário cancelar volta para menu.
 	trap "killall rtorrent; clear; exit" 2 15
 
 	# Loop que aguarda o torrent ser concluido.
@@ -207,7 +239,7 @@ baixa_imagens() {
 		    # quanto já foi copiado?
 		    [ -e ${img_win} ] && sizelocwin=$(du -b ${img_win} | cut -f1)
 		    [ -e ${img_lin} ] && sizeloclin=$(du -b ${img_lin} | cut -f1)
-            copiado=$((sizelocwin+sizeloclin))
+	            copiado=$((sizelocwin+sizeloclin))
 
 		    # qual a porcentagem do total?
 		    PORCENTAGEM=$((copiado*100/total))
@@ -216,14 +248,17 @@ baixa_imagens() {
 		    echo $PORCENTAGEM
 		
 		    # aguarda até a próxima checagem
-		    sleep 1
+		    sleep 5
 	    done	
 
 	    # cópia finalizada, mostra a porcentagem final
 	    echo 100
+	    log "Download das imagens do Windows e Linux finalizado."
+	    sleep 3
 	
     ) | dialog --title "Baixando imagens..." --gauge "Baixando imagens do Windows e Linux do servidor RISOS para maquina local" 8 50 0
 
+	log "Finalizando rtorrent."
 	#Finaliza download
 	killall rtorrent
 }
