@@ -478,8 +478,8 @@ atualiza() {
 	log "Verificando disponibilidade do servidor de atualização."
 	ping -q -c 1 200.131.37.236 > /dev/null 2>&1
 	if [ "$?" -eq "0" ]; then
-		log "Iniciando download do script novo."
-		(wget 200.131.37.236/riso -O /usr/riso/riso && log "RISO atualizado com sucesso.") || log "ERRO: Não foi possível baixar o novo script."
+		log "Iniciando download do script novo"
+		wget 200.131.37.236/riso -O /usr/riso/riso
 		bash /usr/riso/riso
 		exit
 	else
@@ -488,7 +488,6 @@ atualiza() {
 		--title 'ERRO' \
 		--msgbox '\n   Esta versão já é a mais recente'\
 		7 40
-		log "ERRO: RISO já é a versão mais nova."
 	fi
 }
 
