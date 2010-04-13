@@ -166,8 +166,7 @@ instala_linux() {
 		log "Imagem do Linux ainda não foi baixada."
 		return 5
 	fi
-	
-	    
+  
 }
 
 #Baixa imagens do Linux e do Windows.
@@ -419,10 +418,12 @@ instala_rec() {
 		reboot
 	else
 		log "ERRO: Não foi possível instalar a imagem de recuperação."
-		echo " "
-		echo "      ...NOSSA!!!, o script falhou!!!...     "
-		echo "...reinicie o computador e tente outra vez..."
-		echo " "
+		dialog \
+        --title 'Atenção' \
+        --ok-label 'OK' \
+        --msgbox '\n      ...NOSSA!!!, o script falhou!!!...     
+...reinicie o computador e tente outra vez...' \
+        8 50
 	fi
 
 }

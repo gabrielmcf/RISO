@@ -255,6 +255,539 @@ mais rápido possível.' \
 		0 0
 }
 
+livecd() {
+
+    #Modifica rc.local
+    cat /etc/rc.local | grep -v exit > /etc/rc.local.tmp
+    echo "bash /usr/riso/riso" >> /etc/rc.local.tmp
+    echo "exit 0" >> /etc/rc.local.tmp
+    mv /etc/rc.local.tmp /etc/rc.local 
+
+    # load the remastersys.conf file
+    . /etc/remastersys.conf
+
+    cdfs $@
+    iso $@
+
+    #Restaura rc.local
+    cat /etc/rc.local | grep -v riso > /etc/rc.local.tmp
+    mv /etc/rc.local.tmp /etc/rc.local
+
+}
+
+cdfs (){
+
+#removing popularity-contest as it causes a problem when installing with ubiquity
+apt-get -y -q remove popularity-contest
+
+# check whether system is gnome or kde based to load the correct ubiquity frontend
+if [ "`cat /etc/X11/default-display-manager`" = "/usr/bin/kdm" ]; then
+apt-get -y -q install ubiquity-frontend-kde
+apt-get -y -q remove ubiquity-frontend-gtk
+else
+apt-get -y -q install ubiquity-frontend-gtk
+apt-get -y -q remove ubiquity-frontend-kde
+apt-get -y -q install metacity
+fi
+
+# prevent the installer from changing the apt sources.list
+if [ ! -f "/usr/share/ubiquity/apt-setup.saved" ]; then
+cp /usr/share/ubiquity/apt-setup /usr/share/ubiquity/apt-setup.saved
+fi
+
+sleep 1
+
+# Step 3 - Create the CD tree in $WORKDIR/ISOTMP
+echo "Checking if the $WORKDIR folder has been created"
+if [ -d "$WORKDIR" ]; then
+rm -rf $WORKDIR/dummysys/var/*
+rm -rf $WORKDIR/dummysys/etc/*
+rm -rf $WORKDIR/ISOTMP/isolinux
+rm -rf $WORKDIR/ISOTMP/grub
+rm -rf $WORKDIR/ISOTMP/.disk
+
+else
+mkdir -p $WORKDIR/ISOTMP/casper
+mkdir -p $WORKDIR/ISOTMP/preseed
+mkdir -p $WORKDIR/dummysys/dev
+mkdir -p $WORKDIR/dummysys/etc
+mkdir -p $WORKDIR/dummysys/proc
+mkdir -p $WORKDIR/dummysys/tmp
+mkdir -p $WORKDIR/dummysys/sys
+mkdir -p $WORKDIR/dummysys/mnt
+mkdir -p $WORKDIR/dummysys/media/cdrom
+mkdir -p $WORKDIR/dummysys/var
+chmod ug+rwx,o+rwt $WORKDIR/dummysys/tmp
+
+fi
+
+if [ "$CDBOOTTYPE" = "ISOLINUX" ]; then
+mkdir -p $WORKDIR/ISOTMP/isolinux
+else
+mkdir -p $WORKDIR/ISOTMP/boot/grub
+fi
+
+mkdir -p $WORKDIR/ISOTMP/.disk
+
+
+echo "Copying /var and /etc to temp area and excluding extra files"
+
+if [ "$EXCLUDES" != "" ]; then
+for addvar in $EXCLUDES ; do
+VAREXCLUDES="$VAREXCLUDES --exclude='$addvar' "
+done
+fi
+
+rsync --exclude='*.log.*' --exclude='*.pid' --exclude='*.bak' --exclude='*.[0-9].gz' --exclude='*.deb' $VAREXCLUDES-a /var/. $WORKDIR/dummysys/var/.
+rsync $VAREXCLUDES-a /etc/. $WORKDIR/dummysys/etc/.
+
+rm -rf $WORKDIR/dummysys/etc/X11/xorg.conf*
+rm -rf $WORKDIR/dummysys/etc/resolv.conf
+rm -rf $WORKDIR/dummysys/etc/hosts
+rm -rf $WORKDIR/dummysys/etc/hostname
+rm -rf $WORKDIR/dummysys/etc/timezone
+rm -rf $WORKDIR/dummysys/etc/mtab
+rm -rf $WORKDIR/dummysys/etc/fstab
+rm -rf $WORKDIR/dummysys/etc/udev/rules.d/70-persistent*
+rm -rf $WORKDIR/dummysys/etc/cups/ssl/server.crt
+rm -rf $WORKDIR/dummysys/etc/cups/ssl/server.key
+rm -rf $WORKDIR/dummysys/etc/ssh/ssh_host_rsa_key
+rm -rf $WORKDIR/dummysys/etc/ssh/ssh_host_dsa_key.pub
+rm -rf $WORKDIR/dummysys/etc/ssh/ssh_host_dsa_key
+rm -rf $WORKDIR/dummysys/etc/ssh/ssh_host_rsa_key.pub
+ls $WORKDIR/dummysys/var/lib/apt/lists | grep -v ".gpg" | grep -v "lock" | grep -v "partial" | xargs -i rm $WORKDIR/dummysys/var/lib/apt/lists/{} ; 
+
+if [ "$1" = "dist" ]; then
+
+echo "  " > $WORKDIR/dummysys/etc/gdm/gdm.conf-custom
+rm -rf $WORKDIR/dummysys/etc/group
+rm -rf $WORKDIR/dummysys/etc/passwd
+rm -rf $WORKDIR/dummysys/etc/shadow
+rm -rf $WORKDIR/dummysys/etc/shadow-
+rm -rf $WORKDIR/dummysys/etc/gshadow
+rm -rf $WORKDIR/dummysys/etc/gshadow-
+
+
+find $WORKDIR/dummysys/var/run $WORKDIR/dummysys/var/log $WORKDIR/dummysys/var/mail $WORKDIR/dummysys/var/spool $WORKDIR/dummysys/var/lock $WORKDIR/dummysys/var/backups $WORKDIR/dummysys/var/tmp $WORKDIR/dummysys/var/crash -type f -exec rm {} \;
+
+for i in dpkg.log lastlog mail.log syslog auth.log daemon.log faillog lpr.log mail.warn user.log boot debug mail.err messages wtmp bootstrap.log dmesg kern.log mail.info
+do
+        touch $WORKDIR/dummysys/var/log/${i}
+done
+
+# remove the non system users on the passwd and group files and copy them to dummysys
+
+# see if any temp users left over from previous versions of remastersys as the process has now changed
+
+grep '^[^:]*:[^:]*:[5-9][0-9][0-9]:' /etc/passwd | awk -F ":" '{print "/usr/sbin/userdel -f",$1}'> $WORKDIR/cleantmpusers
+. $WORKDIR/cleantmpusers
+
+grep '^[^:]*:[^:]*:[0-9]:' /etc/passwd >> $WORKDIR/dummysys/etc/passwd
+grep '^[^:]*:[^:]*:[0-9][0-9]:' /etc/passwd >> $WORKDIR/dummysys/etc/passwd
+grep '^[^:]*:[^:]*:[0-9][0-9][0-9]:' /etc/passwd >> $WORKDIR/dummysys/etc/passwd
+grep '^[^:]*:[^:]*:[3-9][0-9][0-9][0-9][0-9]:' /etc/passwd >> $WORKDIR/dummysys/etc/passwd
+
+grep '^[^:]*:[^:]*:[0-9]:' /etc/group >> $WORKDIR/dummysys/etc/group
+grep '^[^:]*:[^:]*:[0-9][0-9]:' /etc/group >> $WORKDIR/dummysys/etc/group
+grep '^[^:]*:[^:]*:[0-9][0-9][0-9]:' /etc/group >> $WORKDIR/dummysys/etc/group
+grep '^[^:]*:[^:]*:[3-9][0-9][0-9][0-9][0-9]:' /etc/group >> $WORKDIR/dummysys/etc/group
+
+grep '^[^:]*:[^:]*:[5-9][0-9][0-9]:' /etc/passwd | awk -F ":" '{print $1}'> $WORKDIR/tmpusers1
+grep '^[^:]*:[^:]*:[1-9][0-9][0-9][0-9]:' /etc/passwd | awk -F ":" '{print $1}'> $WORKDIR/tmpusers2
+grep '^[^:]*:[^:]*:[1-2][0-9][0-9][0-9][0-9]:' /etc/passwd | awk -F ":" '{print $1}'> $WORKDIR/tmpusers3
+
+cat $WORKDIR/tmpusers1 $WORKDIR/tmpusers2 $WORKDIR/tmpusers3 > $WORKDIR/tmpusers
+
+cat $WORKDIR/tmpusers | while read LINE ;do
+
+echo $LINE | xargs -i sed -e 's/,{}//g' $WORKDIR/dummysys/etc/group > $WORKDIR/dummysys/etc/group.new1
+echo $LINE | xargs -i sed -e 's/{},//g' $WORKDIR/dummysys/etc/group.new1 > $WORKDIR/dummysys/etc/group.new2
+echo $LINE | xargs -i sed -e 's/{}//g' $WORKDIR/dummysys/etc/group.new2 > $WORKDIR/dummysys/etc/group
+
+rm -rf $WORKDIR/dummysys/etc/group.new1 $WORKDIR/dummysys/etc/group.new2
+
+done
+
+fi
+
+
+# make sure the adduser and autologin functions of casper as set according to the mode
+
+[ "$1" = "dist" ] && [ ! -d $WORKDIR/dummysys/home ] && mkdir $WORKDIR/dummysys/home
+[ "$1" = "dist" ] && chmod 755 /usr/share/initramfs-tools/scripts/casper-bottom/*adduser /usr/share/initramfs-tools/scripts/casper-bottom/*autologin 
+[ "$1" = "backup" ] && [ -d $WORKDIR/dummysys/home ] && rm -rf $WORKDIR/dummysys/home
+[ "$1" = "backup" ] && chmod 644 /usr/share/initramfs-tools/scripts/casper-bottom/*adduser /usr/share/initramfs-tools/scripts/casper-bottom/*autologin
+
+# copy over some of the necessary stuff for the livecd
+
+if [ -f /etc/remastersys/preseed/custom.seed ]; then
+cp /etc/remastersys/preseed/custom.seed $WORKDIR/ISOTMP/preseed/custom.seed
+fi
+
+if [ "$CDBOOTTYPE" = "ISOLINUX" ]; then
+
+#BOOT Type is isolinux
+
+cp /boot/memtest86+.bin $WORKDIR/ISOTMP/isolinux/memtest
+
+# check and see if they have a custom isolinux already setup. eg. they copied over the isolinux folder from their original livecd or made a custom one for their distro
+
+if [ ! -f /etc/remastersys/customisolinux/isolinux.cfg ]; then
+
+find /usr -name 'isolinux.bin' -exec cp {} $WORKDIR/ISOTMP/isolinux/ \;
+
+# setup isolinux for the livecd
+
+#check if it is 8.04 or higher and if it is, add the direct install option to isolinux
+
+VERSION=`lsb_release -r | awk '{print $2}' | awk -F "." '{print $1}'`
+
+sed -e 's/__LIVECDLABEL__/'"$LIVECDLABEL"'/g' /etc/remastersys/isolinux/isolinux.txt > $WORKDIR/ISOTMP/isolinux/isolinux.txt
+cp /etc/remastersys/isolinux/isolinux.cfg $WORKDIR/ISOTMP/isolinux/isolinux.cfg
+
+
+else
+
+cp /etc/remastersys/customisolinux/* $WORKDIR/ISOTMP/isolinux/
+
+fi
+
+else
+
+# Boot Type selected is GRUB
+
+cp /boot/memtest86+.bin $WORKDIR/ISOTMP/boot/memtest
+find /boot -name 'stage2_eltorito' -exec cp {} $WORKDIR/ISOTMP/boot/grub/ \;
+find /usr -name 'stage2_eltorito' -exec cp {} $WORKDIR/ISOTMP/boot/grub/ \;
+find /lib -name 'stage2_eltorito' -exec cp {} $WORKDIR/ISOTMP/boot/grub/ \;
+
+cp /etc/remastersys/grub/splash.xpm.gz $WORKDIR/ISOTMP/boot/splash.xpm.gz
+
+# setup grub for the livecd
+
+#check if it is 8.04 or higher and if it is, add the direct install option to grub
+
+sed -e 's/__LIVECDLABEL__/'"$LIVECDLABEL"'/g' /etc/remastersys/grub/menu.lst > $WORKDIR/ISOTMP/boot/grub/menu.lst
+
+
+fi
+
+ARCH=`archdetect | awk -F "/" '{print $1}'`
+
+cat > $WORKDIR/ISOTMP/README.diskdefines <<FOO
+#define DISKNAME  $LIVECDLABEL
+#define TYPE  binary
+#define TYPEbinary  1
+#define ARCH  $ARCH
+#define ARCH$ARCH  1
+#define DISKNUM  1
+#define DISKNUM1  1
+#define TOTALNUM  0
+#define TOTALNUM0  1
+FOO
+cp $WORKDIR/ISOTMP/README.diskdefines $WORKDIR/ISOTMP/casper/README.diskdefines
+
+sleep 1
+
+# Step 4 - Make the filesystem.manifest and filesystem.manifest-desktop
+echo "Creating filesystem.manifest and filesystem.manifest-desktop"
+
+dpkg-query -W --showformat='${Package} ${Version}\n' \
+        > $WORKDIR/ISOTMP/casper/filesystem.manifest
+
+
+cp $WORKDIR/ISOTMP/casper/filesystem.manifest $WORKDIR/ISOTMP/casper/filesystem.manifest-desktop
+
+sleep 1
+
+# Step 5 - Prepare casper.conf depending on whether this is a backup or dist
+
+if [ "$1" = "backup" ]; then
+LIVEUSER="`grep '^[^:]*:[^:]*:1000:' /etc/passwd | awk -F ":" '{ print $1 }'`"
+fi
+
+echo "# This file should go in /etc/casper.conf" > /etc/casper.conf
+echo "# Supported variables are:" >> /etc/casper.conf
+echo "# USERNAME, USERFULLNAME, HOST, BUILD_SYSTEM" >> /etc/casper.conf
+echo " " >> /etc/casper.conf
+echo "export USERNAME=\"$LIVEUSER\"" >> /etc/casper.conf
+echo "export USERFULLNAME=\"Live session user\"" >> /etc/casper.conf
+echo "export HOST=\"$LIVEUSER\"" >> /etc/casper.conf
+echo "export BUILD_SYSTEM=\"Ubuntu\"" >> /etc/casper.conf
+
+cp /etc/casper.conf $WORKDIR/dummysys/etc/
+
+sleep 1
+
+
+# if the mode is dist then renumber the uid's for any user with a uid greater than 1000
+# and make the passwdrestore file so the uid's are restored before the script finishes
+# if this is not done, the livecd user will not be created properly
+
+if [ "$1" = "dist" ]; then
+
+# make sure user-setup-apply is present in case backup mode was last used
+
+if [ -f /usr/lib/ubiquity/user-setup/user-setup-apply.orig ]; then
+cp /usr/lib/ubiquity/user-setup/user-setup-apply.orig /usr/lib/ubiquity/user-setup/user-setup-apply
+fi
+
+else
+
+# since this is backup mode, prevent user-setup-apply from running during install
+if [ ! -f /usr/lib/ubiquity/user-setup/user-setup-apply.orig ]; then
+mv /usr/lib/ubiquity/user-setup/user-setup-apply /usr/lib/ubiquity/user-setup/user-setup-apply.orig
+fi
+echo "exit 0"> /usr/lib/ubiquity/user-setup/user-setup-apply
+chmod 755 /usr/lib/ubiquity/user-setup/user-setup-apply
+
+# copy the install icon to the sudo users desktop
+
+cp `find /usr -name ubiquity*.desktop` /home/`grep '^[^:]*:[^:]*:1000:' /etc/passwd | awk -F ":" '{ print $1 }'`/Desktop
+
+fi
+
+
+
+sleep 1
+
+echo "Setting up casper and ubiquity options for $1 mode"
+
+rm -f /usr/share/ubiquity/apt-setup
+echo "#do nothing" > /usr/share/ubiquity/apt-setup
+chmod 755 /usr/share/ubiquity/apt-setup
+
+# make a new initial ramdisk including the casper scripts
+
+mkinitramfs -o /boot/initrd.img-`uname -r` `uname -r`
+
+echo "Copying your kernel and initrd for the livecd"
+cp /boot/vmlinuz-`uname -r` $WORKDIR/ISOTMP/casper/vmlinuz
+cp /boot/initrd.img-`uname -r` $WORKDIR/ISOTMP/casper/initrd.gz
+
+# Step 6 - Make filesystem.squashfs
+
+if [ -f $WORKDIR/remastersys.log ]; then
+rm -f $WORKDIR/remastersys.log
+touch $WORKDIR/remastersys.log
+fi
+
+
+if [ -f $WORKDIR/ISOTMP/casper/filesystem.squashfs ]; then
+rm -f $WORKDIR/ISOTMP/casper/filesystem.squashfs
+fi
+
+echo "Creating filesystem.squashfs   ... this will take a while so be patient"
+
+#check if it is 8.04 or higher and if it is, add the -no-recovery option so it doesn't include the recovery file and provide higher compression mode
+
+SQUASHFSOPTSHIGH="-no-recovery -always-use-fragments"
+
+echo "Adding stage 1 files/folders that the livecd requires."
+
+# add the blank folders and trimmed down /var to the cd filesystem
+
+mksquashfs $WORKDIR/dummysys/ $WORKDIR/ISOTMP/casper/filesystem.squashfs -no-duplicates $SQUASHFSOPTSHIGH 2>>$WORKDIR/remastersys.log
+
+sleep 1
+
+echo "Adding stage 2 files/folders that the livecd requires."
+
+# add the rest of the system depending on the mode selected
+
+if [ "$1" = "backup" ]; then
+mksquashfs / $WORKDIR/ISOTMP/casper/filesystem.squashfs -no-duplicates $SQUASHFSOPTSHIGH -e \
+.thumbnails \
+.cache \
+.bash_history \
+Cache \
+boot/grub \
+dev \
+etc \
+media \
+mnt \
+proc \
+sys \
+tmp \
+var \
+$WORKDIR $EXCLUDES 2>>$WORKDIR/remastersys.log
+
+else
+mksquashfs / $WORKDIR/ISOTMP/casper/filesystem.squashfs -no-duplicates $SQUASHFSOPTSHIGH -e \
+.thumbnails \
+.cache \
+.bash_history \
+Cache \
+boot/grub \
+dev \
+etc \
+home \
+media \
+mnt \
+proc \
+sys \
+tmp \
+var \
+$WORKDIR $EXCLUDES 2>>$WORKDIR/remastersys.log
+
+fi
+
+sleep 1
+
+
+
+#add some stuff the log in case of problems so I can troubleshoot it easier
+echo "------------------------------------------------------" >>$WORKDIR/remastersys.log
+echo "Mount information" >>$WORKDIR/remastersys.log
+mount >>$WORKDIR/remastersys.log
+echo "------------------------------------------------------" >>$WORKDIR/remastersys.log
+echo "Casper Script info" >>$WORKDIR/remastersys.log
+ls -l /usr/share/initramfs-tools/scripts/casper-bottom/ >>$WORKDIR/remastersys.log
+echo "------------------------------------------------------" >>$WORKDIR/remastersys.log
+echo "/etc/remastersys.conf info" >>$WORKDIR/remastersys.log
+cat /etc/remastersys.conf >>$WORKDIR/remastersys.log
+echo "------------------------------------------------------" >>$WORKDIR/remastersys.log
+echo "/etc/casper.conf info" >>$WORKDIR/remastersys.log
+cat /etc/casper.conf >>$WORKDIR/remastersys.log
+echo "------------------------------------------------------" >>$WORKDIR/remastersys.log
+echo "/etc/passwd info" >>$WORKDIR/remastersys.log
+cat $WORKDIR/dummysys/etc/passwd >>$WORKDIR/remastersys.log
+echo "------------------------------------------------------" >>$WORKDIR/remastersys.log
+echo "/etc/group info" >>$WORKDIR/remastersys.log
+cat $WORKDIR/dummysys/etc/group >>$WORKDIR/remastersys.log
+echo "------------------------------------------------------" >>$WORKDIR/remastersys.log
+echo "Command-line options = $@" >>$WORKDIR/remastersys.log
+echo "------------------------------------------------------" >>$WORKDIR/remastersys.log
+
+
+# cleanup the install icons as they aren't needed on the current system
+
+if [ "$1" = "backup" ]; then
+rm -rf /home/`grep '^[^:]*:[^:]*:1000:' /etc/passwd | awk -F ":" '{ print $1 }'`/Desktop/ubiquity*.desktop
+fi
+
+sleep 1
+
+#checking the size of the compressed filesystem to ensure it meets the iso9660 spec for a single file" 
+SQUASHFSSIZE=`ls -s $WORKDIR/ISOTMP/casper/filesystem.squashfs | awk -F " " '{print $1}'`
+if [ "$SQUASHFSSIZE" -gt "3999999" ]; then
+echo " The compressed filesystem is larger than the iso9660 specification allows for a single file. You must try to reduce the amount of data you are backing up and try again."
+echo " The compressed filesystem is larger than the iso9660 specification allows for a single file. You must try to reduce the amount of data you are backing up and try again.">>$WORKDIR/remastersys.log
+
+exit 1
+fi
+
+
+}
+
+iso (){
+
+    CREATEISO="`which mkisofs`"
+    if [ "$CREATEISO" = "" ]; then
+    CREATEISO="`which genisoimage`"
+    fi
+
+    # check to see if the cd filesystem exists
+
+    if [ ! -f "$WORKDIR/ISOTMP/casper/filesystem.squashfs" ]; then
+    echo "The cd filesystem is missing.  Either there was a problem creating the compressed filesystem or you are trying to run sudo remastersys dist iso before sudo remastersys dist cdfs"
+    echo "The cd filesystem is missing.  Either there was a problem creating the compressed filesystem or you are trying to run sudo remastersys dist iso before sudo remastersys dist cdfs" >>$WORKDIR/remastersys.log
+
+    exit 1
+    fi
+
+    #checking the size of the compressed filesystem to ensure it meets the iso9660 spec for a single file 
+    SQUASHFSSIZE=`ls -s $WORKDIR/ISOTMP/casper/filesystem.squashfs | awk -F " " '{print $1}'`
+    if [ "$SQUASHFSSIZE" -gt "3999999" ]; then
+    echo " The compressed filesystem is larger than the iso9660 specification allows for a single file. You must try to reduce the amount of data you are backing up and try again."
+    echo " The compressed filesystem is larger than the iso9660 specification allows for a single file. You must try to reduce the amount of data you are backing up and try again.">>$WORKDIR/remastersys.log
+
+    exit 1
+    fi
+
+    # Step 7 - Make md5sum.txt for the files on the livecd - this is used during the
+    # checking function of the livecd
+    echo "Creating md5sum.txt for the livecd/dvd"
+    cd $WORKDIR/ISOTMP && find . -type f -print0 | xargs -0 md5sum > md5sum.txt
+
+    if [ "$CDBOOTTYPE" = "ISOLINUX" ]; then
+
+    #isolinux mode
+
+    # remove files that change and cause problems with checking the disk
+    sed -e '/isolinux/d' md5sum.txt > md5sum.txt.new
+    sed -e '/md5sum/d' md5sum.txt.new > md5sum.txt
+    rm -f md5sum.txt.new
+
+    sleep 1
+
+    # Step 8 - Make the ISO file
+    echo "Creating $CUSTOMISO in $WORKDIR"
+    $CREATEISO    \
+     -quiet \
+     -r    \
+     -V "$LIVECDLABEL"    \
+     -cache-inodes    \
+     -J    \
+     -l    \
+     -b isolinux/isolinux.bin    \
+     -c isolinux/boot.cat    \
+     -no-emul-boot    \
+     -boot-load-size 4    \
+     -boot-info-table    \
+     -o $WORKDIR/$CUSTOMISO "$WORKDIR/ISOTMP" 2>>$WORKDIR/remastersys.log 1>>$WORKDIR/remastersys.log
+
+    else
+
+    #grub mode
+
+    # remove files that change and cause problems with checking the disk
+    sed -e '/boot/d' md5sum.txt > md5sum.txt.new
+    sed -e '/md5sum/d' md5sum.txt.new > md5sum.txt
+    rm -f md5sum.txt.new
+
+    sleep 1
+
+    # Step 8 - Make the ISO file
+    echo "Creating $CUSTOMISO in $WORKDIR"
+    $CREATEISO    \
+     -quiet \
+     -r    \
+     -V "$LIVECDLABEL"    \
+     -cache-inodes    \
+     -J    \
+     -l    \
+     -b boot/grub/stage2_eltorito    \
+     -no-emul-boot    \
+     -boot-load-size 4    \
+     -boot-info-table    \
+     -o $WORKDIR/$CUSTOMISO "$WORKDIR/ISOTMP" 2>>$WORKDIR/remastersys.log 1>>$WORKDIR/remastersys.log
+
+    fi
+
+    # create the md5 sum file so the user doesn't have to - this is good so the iso file can later be tested to ensure it hasn't become corrupted
+
+
+
+    echo "Creating $CUSTOMISO.md5 in $WORKDIR"
+
+
+    md5sum $WORKDIR/$CUSTOMISO > $WORKDIR/$CUSTOMISO.md5
+
+    sleep 1
+
+
+    echo "$WORKDIR/$CUSTOMISO is ready to be burned or tested in a virtual machine."
+    echo " "
+    echo "Check the size and if it is larger than 700MB you will need to burn it to a dvd"
+    echo " "
+    ls -hs $WORKDIR/$CUSTOMISO
+    echo " " 
+    echo "It is recommended to run 'sudo remastersys clean' once you have burned and tested the $CUSTOMISO"
+    echo " "
+
+}
+
 #Checklist de seleção.
 menu_inicia_servidor() {
 
@@ -328,9 +861,10 @@ menu() {
 			1 'Iniciar servidor'                \
 			2 'Criar imagens'                   \
 			3 'Criar torrents'                  \
-			4 'Atualiza'                        \
-			5 'Creditos'                        \
-			6 'Help'                            )
+			4 'Criar live-cd'                   \
+			5 'Atualiza'                        \
+			6 'Creditos'                        \
+			7 'Help'                            )
 	
 		# ESC, sai do programa...
 		[ $? -ne 0 ] && break
@@ -340,9 +874,10 @@ menu() {
 			1) menu_inicia_servidor;;
 			2) menu_criar_imagens;;
 			3) menu_criar_torrents;;
-			4) atualiza;;
-			5) creditos;;
-			6) helpi;;
+			4) livecd "backup";;
+			5) atualiza;;
+			6) creditos;;
+			7) helpi;;
 		esac	
 
 	done

@@ -1,0 +1,16 @@
+__LIVECDLABEL__
+
+
+For the default live system, press ENTER or enter 'live'.
+
+To start in safe graphics mode, enter 'xforcevesa'.
+
+To start the installer directly, enter 'install'.
+
+To verify the CD for errors, enter 'check'.
+
+To run memtest86+, enter 'memtest'
+
+To boot from the first hard disk, enter 'hd'
+
+

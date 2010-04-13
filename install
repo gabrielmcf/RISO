@@ -4,10 +4,11 @@
 # Arquivo de instalação do riso e do risos
 # --------------------------------------------------------------------------
 
-dep_cli="avahi-utils rtorrent screen ntfsprogs dialog ssh"
-dep_ser="avahi-utils avahi-daemon bittorrent rtorrent screen ntfsprogs ssh dialog"
+dep_cli="avahi-utils rtorrent screen ntfsprogs ssh"
+dep_ser="avahi-utils avahi-daemon bittorrent rtorrent screen ntfsprogs ssh coreutils mkisofs genisoimage findutils grub bash passwd sed squashfs-tools casper rsync mount eject libdebian-installer4 os-prober ubiquity user-setup discover1 discover laptop-detect syslinux xterm util-linux xresprobe"
 
 menu() {
+    apt-get install -y dialog
 	opcao=$( dialog --stdout \
 	--title	'Instalação do RISO' \
 	--ok-label 'Confirmar'   \
@@ -42,6 +43,7 @@ instala_riso() {
     echo "Movendo script..."
     cp ./src/riso /usr/riso/riso
     chmod +x /usr/riso/riso
+    cp ./conf/riso.conf /usr/riso/riso.conf
     
     echo "Sistema instalado com sucesso."
     echo "Tente digitar 'riso' para iniciar."
@@ -68,7 +70,6 @@ instala_risos() {
     echo "Movendo script..."
     cp ./src/risos /usr/riso/risos
     chmod +x /usr/riso/risos
-    cp ./conf/riso.conf /usr/riso.conf
     
     echo "Gerando chaves rsa..."
     ssh-keygen -t 'rsa' -f '/root/.ssh/id_rsa' -N ''
@@ -138,7 +139,53 @@ instala_risos() {
     echo '  </service>' >> /etc/avahi/services/riso.service
     echo '</service-group>' >> /etc/avahi/services/riso.service
     
-    
+       
+    # preinst script for remastersys
+    if [ -d /remastersys ]; then
+    mv /remastersys /home
+    fi
+
+    if [ -f /etc/remastersys.conf ]; then
+    mv /etc/remastersys.conf /etc/remastersys.conf.old
+    fi
+
+    if [ -f /etc/remastersys/isolinux/splash.pcx ]; then
+    mv /etc/remastersys/isolinux/splash.pcx /etc/remastersys/isolinux/splash.pcx.saved
+    fi
+
+    if [ -f /etc/remastersys/isolinux/splash.rle ]; then
+    mv /etc/remastersys/isolinux/splash.rle /etc/remastersys/isolinux/splash.rle.saved
+    fi
+
+    if [ -f /etc/remastersys/grub/splash.xpm.gz ]; then
+    mv /etc/remastersys/grub/splash.xpm.gz /etc/remastersys/grub/splash.xpm.gz.saved
+    fi
+
+    #Instalação do remastersys
+    mkdir /etc/remastersys
+    cp -r ./src/remastersys/remastersys/customisolinux /etc/remastersys
+    cp -r ./src/remastersys/remastersys/grub /etc/remastersys
+    cp -r ./src/remastersys/remastersys/isolinux /etc/remastersys
+    cp -r ./src/remastersys/remastersys/preseed /etc/remastersys
+    cp ./src/remastersys/remastersys.conf /etc/remastersys.conf
+
+    # postinst script for remastersys
+    if [ -f /etc/remastersys/isolinux/splash.pcx.saved ]; then
+    mv /etc/remastersys/isolinux/splash.pcx.saved /etc/remastersys/isolinux/splash.pcx
+    fi
+
+    if [ -f /etc/remastersys/isolinux/splash.rle.saved ]; then
+    mv /etc/remastersys/isolinux/splash.rle.saved /etc/remastersys/isolinux/splash.rle
+    fi
+
+    if [ -f /etc/remastersys/grub/splash.xpm.gz.saved ]; then
+    mv /etc/remastersys/grub/splash.xpm.gz.saved /etc/remastersys/isolinux/splash.xpm.gz
+    fi
+
+    if [ -f /etc/remastersys.conf.old ]; then
+    mv /etc/remastersys.conf.old /etc/remastersys.conf
+    fi
+
     echo "Sistema instalado com sucesso"
     echo "Tente risos para iniciar"
 }
