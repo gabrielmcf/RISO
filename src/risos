@@ -280,6 +280,76 @@ creditos() {
 		  0 0
 }
 
+#Notificação para imagem criada com sucesso
+linux_criado() {
+
+	dialog \
+	--ok-label 'OK' \
+	--title 'Atenção' \
+	--msgbox '\nImagem do Linux criada com sucesso.\n' \
+		7 40
+}
+
+#Notificação para imagem criada com sucesso
+windows_criado() {
+
+	dialog \
+	--ok-label 'OK' \
+	--title 'Atenção' \
+	--msgbox '\n Imagem do Windows criada com sucesso.\n' \
+		7 43
+}
+
+#Notificação para imagem criada com sucesso
+rec_criado() {
+
+	dialog \
+	--ok-label 'OK' \
+	--title 'Atenção' \
+	--msgbox '\n Imagem de Recuperação criada com sucesso.\n' \
+		7 47
+}
+
+#Notificação para imagens criadas com sucesso
+imagens_criadas() {
+
+	dialog \
+	--ok-label 'OK' \
+	--title 'Atenção' \
+	--msgbox '\n  Imagens criadas com sucesso.\n' \
+		7 37
+}
+
+#Notificação para torrent criado com sucesso
+torrent_linux_criado() {
+
+	dialog \
+	--ok-label 'OK' \
+	--title 'Atenção' \
+	--msgbox '\n  Torrent Linux criado com sucesso.\n' \
+		7 42
+}
+
+#Notificação para torrent criado com sucesso
+torrent_windows_criado() {
+
+    dialog \
+	--ok-label 'OK' \
+	--title 'Atenção' \
+	--msgbox '\n  Torrent Windows criado com sucesso.\n' \
+		7 43
+}
+
+#Notificação para torrent criado com sucesso
+torrents_criados() {
+
+    dialog \
+	--ok-label 'OK' \
+	--title 'Atenção' \
+	--msgbox '\nTorrents do Windows e Linux criados com sucesso.\n' \
+		8 0
+}
+
 #Acredite isso é um help.
 helpi() {
 
@@ -864,13 +934,13 @@ menu_criar_imagens() {
 
 	# De acordo com a opção escolhida, executa funcoes
 	case $opcao in
-		'"Windows"') cria_windows && cria_torrent_windows;;
-		'"Linux"') cria_linux && cria_torrent_linux;;
-		'"Recuperacao"') cria_rec;;
-		'"Windows" "Linux"') cria_windows && cria_torrent_windows && cria_linux && cria_torrent_linux;;
-		'"Windows" "Recuperacao"') cria_rec && cria_windows && cria_torrent_windows;;
-		'"Linux" "Recuperacao"') cria_rec && cria_linux && cria_torrent_linux;;
-		'"Windows" "Linux" "Recuperacao"') cria_rec && cria_windows && cria_torrent_windows && cria_linux && cria_torrent_linux;;
+		'"Windows"') cria_windows && cria_torrent_windows && windows_criado;;
+		'"Linux"') cria_linux && cria_torrent_linux && linux_criado;;
+		'"Recuperacao"') cria_rec && rec_criado;;
+		'"Windows" "Linux"') cria_windows && cria_torrent_windows && cria_linux && cria_torrent_linux && imagens_criadas;;
+		'"Windows" "Recuperacao"') cria_rec && cria_windows && cria_torrent_windows && imagens_criadas;;
+		'"Linux" "Recuperacao"') cria_rec && cria_linux && cria_torrent_linux && imagens_criadas;;
+		'"Windows" "Linux" "Recuperacao"') cria_rec && cria_windows && cria_torrent_windows && cria_linux && cria_torrent_linux && imagens_criadas;;
 	esac
 }
 
@@ -886,9 +956,9 @@ menu_criar_torrents() {
 
     # De acordo com a opção escolhida, executa funcoes
 	case $opcao in
-		'"Windows"') cria_torrent_windows;;
-		'"Linux"') cria_torrent_linux;;
-		'"Windows" "Linux"') cria_torrent_windows && cria_torrent_linux;;
+		'"Windows"') cria_torrent_windows && torrent_windows_criado;;
+		'"Linux"') cria_torrent_linux && torrent_linux_criado;;
+		'"Windows" "Linux"') cria_torrent_windows && cria_torrent_linux && torrents_criados;;
 	esac
 }
 
