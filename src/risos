@@ -10,6 +10,13 @@ tor_win=$img_win.torrent
 tor_lin=$img_lin.torrent
 riso_service=/etc/avahi/services/riso.service
 tab_part=$dir_img/tab_part
+arq_log=$dir_riso/riso.log
+
+#Função de Log
+log(){
+    [ -e $arq_log ] || touch $arq_log
+    echo `date +"%F %H:%M:%S"` "RISO: $*" >> $arq_log 
+}
 
 #Carrega variaveis do arquivo riso.service para variáveis do sistema.
 carrega_variaveis() {
@@ -22,6 +29,7 @@ carrega_variaveis() {
         --ok-label 'OK' \
         --msgbox 'O servidor RISOS precisa estar conectado à rede.\nVerifique a conexão e tente novamente.' \
         7 45
+        log "ERRO: Servidor não encontrado na rede."
         return 1
     fi
     partwindows=`(cut -d ';' -f10 | cut -d '"' -f2 | cut -d '=' -f2) <<< ${avahi_saida}` #Partição com Windows.
@@ -41,7 +49,9 @@ carrega_variaveis() {
 
 #Inicia tracker para disponibilizar imagens na rede.
 inicia_servidor() {
+
 	if [ -e ${img_win} -a -e ${img_lin} ]; then
+	    log "Tracker iniciado para Windows e Linux."
 		bttrack --port 6969 --dfile dstate | grep pog &
 		cd ${dir_img}	
 		rtorrent ${tor_lin} ${tor_win}
@@ -51,6 +61,7 @@ inicia_servidor() {
 		--ok-label 'OK' \
 		--msgbox '\n   Não existem imagens prontas.' \
 		7 40
+		log "ERRO: Ao iniciar tracker para Windows e Linux, Não existem imagens prontas."
 		return 2
 	fi
 	
@@ -58,7 +69,9 @@ inicia_servidor() {
 
 #Inicia tracker para disponibilizar imagem do Windows na rede.
 inicia_servidor_windows() {
+
 	if [ -e ${img_win} ]; then
+    	log "Tracker iniciado para Windows."
 		bttrack --port 6969 --dfile dstate | grep pog &
 		cd ${dir_img}
 		rtorrent ${tor_win}
@@ -68,6 +81,7 @@ inicia_servidor_windows() {
 		--ok-label 'OK' \
 		--msgbox '\nVocê ainda não criou a imagem do windows.' \
 		7 45
+		log "ERRO: Ao iniciar tracker para Windows, Não existe imagem pronta."
 		return 2
 	fi
 	
@@ -75,7 +89,9 @@ inicia_servidor_windows() {
 
 #Inicia tracker para disponibilizar imagem do Linux na rede.
 inicia_servidor_linux() {
+
 	if [ -e ${img_lin} ]; then
+	    log "Tracker iniciado para Linux."
 		bttrack --port 6969 --dfile dstate | grep laialadaiasabadanaavemaria &
 		cd ${dir_img}		
 		rtorrent ${tor_lin}
@@ -85,6 +101,7 @@ inicia_servidor_linux() {
 		--ok-label 'OK' \
 		--msgbox '\nVocê ainda não criou a imagem do linux.' \
 		7 44
+		log "ERRO: Ao iniciar tracker para o Linux, Não existe imagem pronta."
 		return 2
 	fi
 
@@ -93,6 +110,7 @@ inicia_servidor_linux() {
 #Cria imagem do Linux.
 cria_linux() {
 
+    log "Criando imagem do Linux."
 	echo "Removendo imagem antiga do linux..."
 	rm -f ${img_lin}
 	rm -f ${tor_lin}
@@ -115,6 +133,7 @@ cria_linux() {
 cria_torrent_linux() {
 	
 	if [ -e $img_lin ]; then
+	    log "Criando arquivo torrent do linux."
 	    #Cria o torrent
 	    btmakemetafile.bittorrent ${img_lin} http://${servidor}:6969/announce 2> /dev/null
 	
@@ -128,6 +147,7 @@ cria_torrent_linux() {
         --ok-label 'OK' \
         --msgbox '\nVocê ainda não criou a imagem do linux.' \
         7 44
+        log "ERRO: Ao criar arquivo torrent do linux, não existe imagem pronta."
         return 2
 	fi
 	
@@ -136,6 +156,7 @@ cria_torrent_linux() {
 #Cria imagem do Windows.
 cria_windows() {
 	
+	log "Criando imagen do Windows"
 	echo "Removendo imagem antiga do windows..."
 	rm -f ${img_win}
     rm -f ${tor_win}
@@ -155,6 +176,7 @@ A partição ou o sistema de arquivo indicados pelas variáveis\n
 partwindows e sa_partwindows em /etc/avahi/services/riso.service\n
 pode estar incorreta.\n' \
         0 0
+        log "ERRO: Ao criar imagem do Windows, ntfsclone falhou ao criar arquivo windows.img."
         return 3
     fi
     #Atualiza Sistema de arquivo da partição no riso.service
@@ -173,6 +195,7 @@ pode estar incorreta.\n' \
 cria_torrent_windows() {
 	
 	if [ -e ${img_win} ]; then
+	    log "Criando torrent do windows."
         btmakemetafile.bittorrent ${img_win} http://${servidor}:6969/announce 2> /dev/null
         cp $tor_win /var/www
 
@@ -185,6 +208,7 @@ cria_torrent_windows() {
         --ok-label 'OK' \
         --msgbox '\nVocê ainda não criou a imagem do windows.' \
         7 45
+        log "ERRO: Ao criar torrent do windows, não existe imagem pronta."
         return 2
     fi
 }
@@ -192,6 +216,7 @@ cria_torrent_windows() {
 #Cria imagem do SO com R.I.S.O. instalado..
 cria_rec() {
 
+    log "Criando imagem de recuperação"
 	echo "Removendo imagem antiga do windows..."
 	rm -f ${img_win}
 	rm -f ${tor_win}
@@ -213,17 +238,28 @@ cria_rec() {
 
 #Atualiza riso.
 atualiza() {
-    
-    dialog \
-    --ok-label 'OK' \
-    --title 'ERRO' \
-    --msgbox '\n   Esta versão já é a mais recente'\
-    7 40
+
+	log "Iniciando atualização do script."
+	log "Verificando disponibilidade do servidor de atualização."
+	ping -q -c 1 200.131.37.236 > /dev/null 2>&1
+	if [ "$?" -eq "0" ]; then
+		log "Iniciando download do script novo."
+		(wget 200.131.37.236/riso/risos0.5 -O /usr/riso/risos && log "RISO atualizado com sucesso.") || log "ERRO: Não foi possível baixar o novo script."
+		bash /usr/riso/risos
+		exit
+	else
+		dialog \
+		--ok-label 'OK' \
+		--title 'ERRO' \
+		--msgbox '\n   Esta versão já é a mais recente'\
+		7 40
+		log "ERRO: RISO já é a versão mais nova."
+	fi
 }
 
 #Pessoas que desenvolveram esse material.
 creditos() {
-	
+
 	dialog \
 	--ok-label 'OK' \
 	--title 'Creditos' \
@@ -231,12 +267,13 @@ creditos() {
 		 CENTRO FEDERAL DE EDUCAÇAO TECNOLOGICA  \n
 		        Engenharia da Computaçao         \n
 		                                         \n
-		       Germano Teixeira de Miranda       \n
 		      Cristiano Goulart Lopes Dias       \n
 		    Vinicius Tinti de Paula Oliveira     \n
+		       Germano Teixeira de Miranda       \n
 		        Gabriel de Souza Brandao         \n
-		    Gabriel Machado de Castro Fonseca    \n
 		         Marcio J. Menezes Jr.           \n
+		    Gabriel Machado de Castro Fonseca    \n
+		    André Paulista Gordinho da Silva     \n
 		                                         \n
 		           www.dgo.cefetmg.br            \n
 		                                         \n'\
@@ -257,6 +294,7 @@ mais rápido possível.' \
 
 livecd() {
 
+    log "Criando live-cd do riso."
     #Modifica rc.local
     cat /etc/rc.local | grep -v exit > /etc/rc.local.tmp
     echo "bash /usr/riso/riso" >> /etc/rc.local.tmp
@@ -272,7 +310,17 @@ livecd() {
     #Restaura rc.local
     cat /etc/rc.local | grep -v riso > /etc/rc.local.tmp
     mv /etc/rc.local.tmp /etc/rc.local
-
+    
+    dialog \
+	--ok-label 'OK' \
+	--title 'Atenção' \
+    --msgbox 'Arquivo de imagem criado com sucesso em:\n
+/home/remastersys/riso0.5.iso.\n\n
+Para garava-lo em um CD/DVD tente:\n
+cdrecord -v -fs=16M speed=32 dev=1,0,0 -data /home/remastersys/riso0.5.iso\n\n
+Identifique seu dev com: cdrecore -scanbus' \
+    0 0
+    log "Live-cd do riso criado."
 }
 
 cdfs (){
@@ -767,10 +815,7 @@ iso (){
 
     # create the md5 sum file so the user doesn't have to - this is good so the iso file can later be tested to ensure it hasn't become corrupted
 
-
-
     echo "Creating $CUSTOMISO.md5 in $WORKDIR"
-
 
     md5sum $WORKDIR/$CUSTOMISO > $WORKDIR/$CUSTOMISO.md5
 

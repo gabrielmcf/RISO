@@ -8,22 +8,11 @@ color cyan/blue white/blue
 
 splashimage=/boot/splash.xpm.gz
 
-title           Start __LIVECDLABEL__
+title           Iniciar __LIVECDLABEL__
 kernel          /casper/vmlinuz file=/cdrom/preseed/custom.seed boot=casper textonly quiet
 initrd		/casper/initrd.gz
 
-title           Install __LIVECDLABEL__
-kernel          /casper/vmlinuz file=/cdrom/preseed/custom.seed boot=casper only-ubiquity quiet splash
-initrd		/casper/initrd.gz
-
-title		Check the CD/DVD for defects
-kernel		/casper/vmlinuz boot=casper integrity-check quiet splash
-initrd		/casper/initrd.gz
-
-title		Memory Test
-kernel		/boot/memtest
-
-title		Boot the First Hard Disk
+title		Iniciar primeiro disco rigido
 root		(hd0)
 chainloader +1
 

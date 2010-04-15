@@ -4,7 +4,7 @@
 dir_riso=/usr/riso
 dir_img=$dir_riso/imagens
 img_win=$dir_img/windows.img
-img_lin=$dir_img/linux.tarhttp://packages.ubuntu.com/http://packages.ubuntu.com/
+img_lin=$dir_img/linux.tar
 img_rec=$dir_img/rec.tar
 tor_win=$img_win.torrent
 tor_lin=$img_lin.torrent
@@ -14,7 +14,8 @@ arq_log=$dir_riso/riso.log
 
 #Função de Log
 log(){
-   echo `date +"%F %H:%M:%S"` "RISO: $*" >> $arq_log 
+    [ -e $arq_log ] || touch $arq_log
+    echo `date +"%F %H:%M:%S"` "RISO: $*" >> $arq_log 
 }
 
 #Carrega variaveis do arquivo riso.service para variáveis do sistema.
@@ -28,7 +29,7 @@ carrega_variaveis() {
         --ok-label 'OK' \
         --msgbox 'Não existe nenhum servidor RISOS ativo na rede.\nVerifique a conexão e tente novamente.' \
         0 0
-	log "ERRO: Servidor não encontrado na rede."
+	    log "ERRO: Servidor não encontrado na rede."
         return 1
     fi
     partwindows=`(cut -d ';' -f10 | cut -d '"' -f2 | cut -d '=' -f2) <<< ${avahi_saida}` #Partição com Windows.
@@ -480,7 +481,7 @@ atualiza() {
 	ping -q -c 1 200.131.37.236 > /dev/null 2>&1
 	if [ "$?" -eq "0" ]; then
 		log "Iniciando download do script novo."
-		(wget 200.131.37.236/riso -O /usr/riso/riso && log "RISO atualizado com sucesso.") || log "ERRO: Não foi possível baixar o novo script."
+		(wget 200.131.37.236/riso/riso0.5 -O /usr/riso/riso && log "RISO atualizado com sucesso.") || log "ERRO: Não foi possível baixar o novo script."
 		bash /usr/riso/riso
 		exit
 	else
