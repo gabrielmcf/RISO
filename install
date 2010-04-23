@@ -5,7 +5,7 @@
 # --------------------------------------------------------------------------
 
 dep_cli="avahi-utils rtorrent screen ntfsprogs ssh"
-dep_ser="avahi-utils avahi-daemon bittorrent rtorrent screen ntfsprogs ssh coreutils mkisofs genisoimage findutils grub bash passwd sed squashfs-tools casper rsync mount eject libdebian-installer4 os-prober ubiquity user-setup discover1 discover laptop-detect syslinux xterm util-linux xresprobe"
+dep_ser="avahi-utils avahi-daemon bittorrent rtorrent screen ntfsprogs ssh coreutils mkisofs genisoimage findutils grub bash passwd sed squashfs-tools casper rsync mount eject libdebian-installer4 os-prober ubiquity user-setup discover1 discover laptop-detect syslinux xterm util-linux xresprobe cdrecord"
 
 menu() {
     apt-get install -y dialog
@@ -85,19 +85,10 @@ instala_risos() {
     echo -n "Qual a partição em que o área de troca(swap) foi instalado(Ex: /dev/sda3):"
     read partswap
     
-    umount /mnt 2> /dev/null
-    mount ${partrec} /mnt
-    sa_partrec=`df -T ${partrec} | awk 'NR==2{print $2}'`
-    
-    umount /mnt 2> /dev/null
-    mount ${partlinux} /mnt
-    sa_partlinux=`df -T ${partlinux} | awk 'NR==2{print $2}'`
-    
-    umount /mnt 2> /dev/null
-    mount ${partwindows} /mnt
-    sa_partwindows=`df -T ${partwindows} | awk 'NR==2{print $2}'`
-
-    umount /mnt 2> /dev/null
+    #Pega sistema de arquivo das partiçoes.
+    sa_partrec=`blkid ${partrec} | cut -d'"' -f4`
+    sa_partlinux=`blkid ${partlinux} | cut -d'"' -f4`
+    sa_partwindows=`blkid ${partwindows} | cut -d'"' -f4`
     
     echo "Criando arquivo de configuração..."
     echo '<?xml version="1.0" standalone="no"?><!--*-nxml-*-->' > /etc/avahi/services/riso.service

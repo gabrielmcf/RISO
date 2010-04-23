@@ -122,7 +122,7 @@ cria_linux() {
 	tar -cvf ${img_lin} *
 	
 	#Atualiza Sistema de arquivo da partição no riso.service
-	sa_partlinux=`df -T ${partlinux} | awk 'NR==2{print $2}'`
+	sa_partlinux=`blkid ${partlinux} | cut -d'"' -f4`
 	sed "s/sa_partlinux=[^<]*/sa_partlinux=${sa_partlinux}/" < ${riso_service} > ${riso_service}.tmp
 	mv ${riso_service}.tmp ${riso_service}
 	
@@ -180,14 +180,9 @@ pode estar incorreta.\n' \
         return 3
     fi
     #Atualiza Sistema de arquivo da partição no riso.service
-    mount ${partwindows} /mnt
-	sa_partwindows=`df -T ${partwindows} | awk 'NR==2{print $2}'`
-	echo $sa_partwindows
-	echo $partwindows
+	sa_partwindows=`blkid ${partwindows} | cut -d'"' -f4`
 	sed "s/sa_partwindows=[^<]*/sa_partwindows=${sa_partwindows}/" < ${riso_service} > ${riso_service}.tmp
 	mv ${riso_service}.tmp ${riso_service}
-	
-	umount /mnt 2> /dev/null
 	
 }
 
@@ -230,7 +225,7 @@ cria_rec() {
 	tar -cvf ${img_rec} *
 	
 	#Atualiza Sistema de arquivo da partição no riso.service
-    sa_partrec=`df -T ${partrec} | awk 'NR==2{print $2}'`
+    sa_partrec=`blkid ${partrec} | cut -d'"' -f4`
     sed "s/sa_partrec=[^<]*/sa_partrec=${sa_partrec}/" < ${riso_service} > ${riso_service}.tmp
     mv ${riso_service}.tmp ${riso_service}
 	
@@ -357,7 +352,7 @@ helpi() {
 	--ok-label 'OK' \
 	--title 'Help' \
 	--msgbox 'Envie um e-mail com suas duvidas e sugestões \n
-para: "germano@comp.eng.br" e reponderei o\n
+para: "germano@comp.eng.br" e responderei o\n
 mais rápido possível.' \
 		0 0
 }
@@ -370,6 +365,7 @@ livecd() {
     echo "bash /usr/riso/riso" >> /etc/rc.local.tmp
     echo "exit 0" >> /etc/rc.local.tmp
     mv /etc/rc.local.tmp /etc/rc.local 
+    chmod +x /etc/rc.local
 
     # load the remastersys.conf file
     . /etc/remastersys.conf
@@ -380,6 +376,7 @@ livecd() {
     #Restaura rc.local
     cat /etc/rc.local | grep -v riso > /etc/rc.local.tmp
     mv /etc/rc.local.tmp /etc/rc.local
+    chmod +x /etc/rc.local
     
     dialog \
 	--ok-label 'OK' \

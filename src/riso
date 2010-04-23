@@ -61,7 +61,7 @@ instala() {
 	    
 
 	    #Clona linux.
-	    mkfs.ext3 $partlinux
+	    mkfs.${sa_partlinux} $partlinux
 	    mount $partlinux /mnt
 	    cd /mnt
 	    log "Instalação do Linux iniciada."
@@ -137,7 +137,7 @@ instala_linux() {
 	    umount $partlinux 2> /dev/null
 
 	    #clona linux
-	    mkfs.ext3 $partlinux
+	    mkfs.${sa_partlinux} $partlinux
 	    mount $partlinux /mnt
 	    cd /mnt
 	    log "Instalação do Linux iniciada."
@@ -456,7 +456,7 @@ baixa_rec() {
 	mount ${partrec} /mnt
 	cd /mnt
 	log "Iniciando o download da imagem de recuperação."
-	(scp root@${servidor}:${img_rec} . && log "Download da imagem de recuperação finalizada.") || log "ERRO: Não foi possível realizar o download da imagem de recuperação."
+	(scp root@${servidor}:${img_rec} ${img_rec} && log "Download da imagem de recuperação finalizada.") || log "ERRO: Não foi possível realizar o download da imagem de recuperação."
 }
 
 #Define configurações do riso
