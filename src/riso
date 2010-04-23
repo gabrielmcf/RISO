@@ -456,7 +456,7 @@ baixa_rec() {
 	mount ${partrec} /mnt
 	cd /mnt
 	log "Iniciando o download da imagem de recuperação."
-	(scp root@${servidor}:${img_rec} ${img_rec} && log "Download da imagem de recuperação finalizada.") || log "ERRO: Não foi possível realizar o download da imagem de recuperação."
+	(scp root@${servidor}:${img_rec} ./rec.tar && log "Download da imagem de recuperação finalizada.") || log "ERRO: Não foi possível realizar o download da imagem de recuperação."
 }
 
 #Define configurações do riso
