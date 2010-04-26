@@ -222,7 +222,7 @@ cria_rec() {
 	rm -f ${img_rec}
 	sfdisk -d /dev/sda > ${tab_part}
 	cd /
-	tar -cvf ${img_rec} *
+	tar --exclude=risos --exclude=riso.service -cvf ${img_rec} *
 	
 	#Atualiza Sistema de arquivo da partição no riso.service
     sa_partrec=`blkid ${partrec} | cut -d'"' -f4`

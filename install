@@ -4,8 +4,8 @@
 # Arquivo de instalação do riso e do risos
 # --------------------------------------------------------------------------
 
-dep_cli="avahi-utils rtorrent screen ntfsprogs ssh"
-dep_ser="avahi-utils avahi-daemon bittorrent rtorrent screen ntfsprogs ssh coreutils mkisofs genisoimage findutils grub bash passwd sed squashfs-tools casper rsync mount eject libdebian-installer4 os-prober ubiquity user-setup discover1 discover laptop-detect syslinux xterm util-linux xresprobe cdrecord"
+dep_cli="avahi-utils rtorrent screen ntfsprogs ssh grub2"
+dep_ser="avahi-utils avahi-daemon bittorrent rtorrent screen ntfsprogs grub2 ssh coreutils mkisofs genisoimage findutils grub bash passwd sed squashfs-tools casper rsync mount eject libdebian-installer4 os-prober ubiquity user-setup discover1 discover laptop-detect syslinux xterm util-linux xresprobe cdrecord"
 
 menu() {
     apt-get install -y dialog
@@ -90,6 +90,17 @@ instala_risos() {
     sa_partlinux=`blkid ${partlinux} | cut -d'"' -f4`
     sa_partwindows=`blkid ${partwindows} | cut -d'"' -f4`
     
+    #Prepara grub2
+    sed s/'GRUB_DEFAULT=0'/'GRUB_DEFAULT=1'/g -i /etc/default/grub
+    sed s/'GRUB_DISTRIBUTOR=*'/'#GRUB_DISTRIBUTOR='/g -i /etc/default/grub
+    echo 'GRUB_DISTRIBUTOR=Recuperacao' >> /etc/default/grub
+    sed s/'#GRUB_DISABLE_LINUX_UUID=true'/'GRUB_DISABLE_LINUX_UUID=true'/g -i /etc/default/grub
+    sed s/'#GRUB_DISABLE_LINUX_RECOVERY="true"'/'GRUB_DISABLE_LINUX_RECOVERY="true"'/g -i /etc/default/grub
+    rm -f /etc/grub.d/20_memtest86+
+    mv /etc/grub.d/10_linux /etc/grub.d/50_linux
+    update-grub -y
+    
+    #Cria riso.service
     echo "Criando arquivo de configuração..."
     echo '<?xml version="1.0" standalone="no"?><!--*-nxml-*-->' > /etc/avahi/services/riso.service
     echo '<!DOCTYPE service-group SYSTEM "avahi-service.dtd">' >> /etc/avahi/services/riso.service
@@ -153,7 +164,7 @@ instala_risos() {
     fi
 
     #Instalação do remastersys
-    mkdir /etc/remastersys
+    mkdir -p /etc/remastersys
     cp -r ./src/remastersys/remastersys/customisolinux /etc/remastersys
     cp -r ./src/remastersys/remastersys/grub /etc/remastersys
     cp -r ./src/remastersys/remastersys/isolinux /etc/remastersys

@@ -408,6 +408,7 @@ instala_rec() {
 	
 	#instala o grub
 	log "Instalando o GRUB."
+	chroot /mnt update-grub -y
 	(chroot /mnt grub-install /dev/sda && log "GRUB instalado com sucesso.") || log "ERRO: GRUB não instalado com sucesso."
 
 	#Verifica se a instalaçao foi concluida con sucesso
