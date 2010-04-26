@@ -127,7 +127,7 @@ cria_linux() {
 	mv ${riso_service}.tmp ${riso_service}
 	
 	umount /mnt 2> /dev/null
-	
+	log "Imagem do Linux criada."
 }
 
 cria_torrent_linux() {
@@ -141,6 +141,7 @@ cria_torrent_linux() {
 	    tam=`du -b ${img_lin} | cut -f1`
 	    sed "s/tamlinux=[0-9]*/tamlinux=${tam}/" < ${riso_service} > ${riso_service}.tmp
 	    mv ${riso_service}.tmp ${riso_service}
+	    log "Arquivo torrent do linux criado."
 	else
         dialog \
         --title 'Atenção' \
@@ -156,7 +157,7 @@ cria_torrent_linux() {
 #Cria imagem do Windows.
 cria_windows() {
 	
-	log "Criando imagen do Windows"
+	log "Criando imagem do Windows."
 	echo "Removendo imagem antiga do windows..."
 	rm -f ${img_win}
     rm -f ${tor_win}
@@ -183,6 +184,7 @@ pode estar incorreta.\n' \
 	sa_partwindows=`blkid ${partwindows} | cut -d'"' -f4`
 	sed "s/sa_partwindows=[^<]*/sa_partwindows=${sa_partwindows}/" < ${riso_service} > ${riso_service}.tmp
 	mv ${riso_service}.tmp ${riso_service}
+	log "Imagem do Windows criada."
 	
 }
 
@@ -197,6 +199,7 @@ cria_torrent_windows() {
         tam=`du -b ${img_win} | cut -f1`
         sed "s/tamwindows=[0-9]*/tamwindows=${tam}/" < ${riso_service} > ${riso_service}.tmp
 	    mv ${riso_service}.tmp ${riso_service}
+	    log "Torrent do windows criado."
     else
         dialog \
         --title 'Atenção' \
@@ -228,6 +231,7 @@ cria_rec() {
     sa_partrec=`blkid ${partrec} | cut -d'"' -f4`
     sed "s/sa_partrec=[^<]*/sa_partrec=${sa_partrec}/" < ${riso_service} > ${riso_service}.tmp
     mv ${riso_service}.tmp ${riso_service}
+	log "Imagem de recuperação criada"
 	
 }
 
