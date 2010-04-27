@@ -366,6 +366,9 @@ livecd() {
     
     #Modifica rc.local
     cat /etc/rc.local | grep -v exit > /etc/rc.local.tmp
+    echo "rm /etc/avahi/services/riso.service" >> etc/rc.local.tmp
+    echo "rm /usr/riso/risos" >> /etc/rc.local.tmp
+    echo "rm /usr/bin/risos" >> /etc/rc.local.tmp
     echo "bash /usr/riso/riso" >> /etc/rc.local.tmp
     echo "exit 0" >> /etc/rc.local.tmp
     mv /etc/rc.local.tmp /etc/rc.local 

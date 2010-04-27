@@ -70,14 +70,14 @@ instala() {
 	    umount /mnt 2> /dev/null
 	    
 	    #verifica se desliga computador
-	    desligar=`grep "DESLIGAR" riso.conf | cut -d'=' -f2`
+	    desligar=`grep "DESLIGAR" ${riso_conf} | cut -d'=' -f2`
 	    if [ "$desligar" = "SIM" ]; then
 		log "Desligando computador."
 	        halt
 	    fi
 	
 	    #verifica se reinicia computador
-	    reiniciar=`grep "REINICIAR" riso.conf | cut -d'=' -f2`
+	    reiniciar=`grep "REINICIAR" ${riso_conf} | cut -d'=' -f2`
 	    if [ "$reiniciar" = "SIM" ]; then
 		log "Reiniciando computador."
 	        reboot
@@ -105,14 +105,14 @@ instala_windows() {
 	    (ntfsclone -r $img_win -O $partwindows && log "Fim da instalação do Windows") || log "ERRO: Windows não instalou com sucesso."
 	
 	    #verifica se desliga computador
-	    desligar=`grep "DESLIGAR" riso.conf | cut -d'=' -f2`
+	    desligar=`grep "DESLIGAR" ${riso_conf} | cut -d'=' -f2`
 	    if [ "$desligar" = "SIM" ]; then
 		log "Desligando computador."
 	        halt
 	    fi
 	
 	    #verifica se reinicia computador
-	    reiniciar=`grep "REINICIAR" riso.conf | cut -d'=' -f2`
+	    reiniciar=`grep "REINICIAR" ${riso_conf} | cut -d'=' -f2`
 	    if [ "$reiniciar" = "SIM" ]; then
 		log "Reiniciando computador."
 	        reboot
@@ -146,14 +146,14 @@ instala_linux() {
 	    umount /mnt 2> /dev/null
 	    
 	    #verifica se desliga computador
-	    desligar=`grep "DESLIGAR" riso.conf | cut -d'=' -f2`
+	    desligar=`grep "DESLIGAR" ${riso_conf} | cut -d'=' -f2`
 	    if [ "$desligar" = "SIM" ]; then
 		log "Desligando computador."
 	        halt
 	    fi
 	
 	    #verifica se reinicia computador
-	    reiniciar=`grep "REINICIAR" riso.conf | cut -d'=' -f2`
+	    reiniciar=`grep "REINICIAR" ${riso_conf} | cut -d'=' -f2`
 	    if [ "$reiniciar" = "SIM" ]; then
 		log "Reiniciando computador."
 	        reboot
