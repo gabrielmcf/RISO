@@ -30,7 +30,7 @@ carrega_variaveis() {
         --msgbox 'O servidor RISOS precisa estar conectado à rede.\nVerifique a conexão e tente novamente.' \
         7 45
         log "ERRO: Servidor não encontrado na rede."
-        return 1
+        exit 1
     fi
     partwindows=`(cut -d ';' -f10 | cut -d '"' -f2 | cut -d '=' -f2) <<< ${avahi_saida}` #Partição com Windows.
     partlinux=`(cut -d ';' -f10 | cut -d '"' -f4 | cut -d '=' -f2) <<< ${avahi_saida}` #Partição com Linux.
