@@ -69,6 +69,8 @@ instala() {
 	    cd ..
 	    umount /mnt 2> /dev/null
 	    
+	    update-grub
+	    
 	    #verifica se desliga computador
 	    desligar=`grep "DESLIGAR" ${riso_conf} | cut -d'=' -f2`
 	    if [ "$desligar" = "SIM" ]; then
@@ -103,6 +105,8 @@ instala_windows() {
 	    #Clona windows
 	    log "Instalação do Windows iniciada."
 	    (ntfsclone -r $img_win -O $partwindows && log "Fim da instalação do Windows") || log "ERRO: Windows não instalou com sucesso."
+	
+	    update-grub
 	
 	    #verifica se desliga computador
 	    desligar=`grep "DESLIGAR" ${riso_conf} | cut -d'=' -f2`
@@ -144,6 +148,8 @@ instala_linux() {
 	    (tar -xvf $img_lin && log "Fim da instalação do Linux.") || log "ERRO: Linux instalou com sucesso."
 	    cd ..
 	    umount /mnt 2> /dev/null
+	    
+	    update-grub
 	    
 	    #verifica se desliga computador
 	    desligar=`grep "DESLIGAR" ${riso_conf} | cut -d'=' -f2`
