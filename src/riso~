@@ -30,7 +30,7 @@ carrega_variaveis() {
         --msgbox 'Não existe nenhum servidor RISOS ativo na rede.\nVerifique a conexão e tente novamente.' \
         0 0
 	    log "ERRO: Servidor não encontrado na rede."
-        return 1
+        exit 1
     fi
     partwindows=`(cut -d ';' -f10 | cut -d '"' -f2 | cut -d '=' -f2) <<< ${avahi_saida}` #Partição com Windows.
     partlinux=`(cut -d ';' -f10 | cut -d '"' -f4 | cut -d '=' -f2) <<< ${avahi_saida}` #Partição com Linux.
@@ -179,7 +179,7 @@ baixa_imagens() {
 
     #Vefifica se imagem do windows já é a mais recente
 	sizelocwin="0"
-	[ -e ${img_win} ] && sizelocwin=$(du -b ${img_win} | cut -f1)
+	[ -e ${img_win} ] && sizelocwin=$(ls -ls ${img_win} | cut -d' ' -f1 )
 	if [ "$sizelocwin" = "$tamwindows" ]; then
         dialog \
         --title 'Atenção' \
@@ -192,7 +192,7 @@ baixa_imagens() {
 
     #Vefifica se imagem do linux já é a mais recente
 	sizeloclin="0"
-	[ -e ${img_lin} ] && sizeloclin=$(du -b ${img_lin} | cut -f1)
+	[ -e ${img_lin} ] && sizeloclin=$(ls -ls ${img_lin} | cut -d' ' -f1)
 	if [ "$sizeloclin" = "$tamlinux" ]; then
         dialog \
         --title 'Atenção' \
@@ -237,8 +237,8 @@ baixa_imagens() {
 	    while [ "$sizelocwin" != "$tamwindows" -o "$sizeloclin" != "$tamlinux" ]; do
 	
 		    # quanto já foi copiado?
-		    [ -e ${img_win} ] && sizelocwin=$(du -b ${img_win} | cut -f1)
-		    [ -e ${img_lin} ] && sizeloclin=$(du -b ${img_lin} | cut -f1)
+		    [ -e ${img_win} ] && sizelocwin=$(ls -ls ${img_win} | cut -d' ' -f1)
+		    [ -e ${img_lin} ] && sizeloclin=$(ls -ls ${img_lin} | cut -d' ' -f1)
 	            copiado=$((sizelocwin+sizeloclin))
 
 		    # qual a porcentagem do total?
@@ -271,7 +271,7 @@ baixa_imagem_windows() {
 
     #Vefifica se imagem já é a mais recente
 	sizelocwin="0"
-	[ -e ${img_win} ] && sizelocwin=$(du -b ${img_win} | cut -f1)
+	[ -e ${img_win} ] && sizelocwin=$(ls -ls ${img_win} | cut -d' ' -f1)
 	if [ "$sizelocwin" = "$tamwindows" ]; then
         dialog \
         --title 'Atenção' \
@@ -307,7 +307,7 @@ baixa_imagem_windows() {
 	    while [ "$sizelocwin" != "$tamwindows" ]; do
 	
 		    # quanto já foi copiado?
-		    [ -e ${img_win} ] && sizelocwin=$(du -b $img_win | cut -f1)
+		    [ -e ${img_win} ] && sizelocwin=$(ls -ls $img_win | cut -d' ' -f1)
 
 		    # qual a porcentagem do total?
 		    PORCENTAGEM=$((sizelocwin*100/tamwindows))
@@ -340,7 +340,7 @@ baixa_imagem_linux() {
 	
     #Vefifica se imagem já é a mais recente
 	sizeloclin="0"
-	[ -e ${img_lin} ] && sizeloclin=$(du -b ${img_lin} | cut -f1)
+	[ -e ${img_lin} ] && sizeloclin=$(ls -ls ${img_lin} | cut -d' ' -f1)
 	if [ "$sizeloclin" = "$tamlinux" ]; then
         dialog \
         --title 'Atenção' \
@@ -376,7 +376,7 @@ baixa_imagem_linux() {
 	    while [ "$sizeloclin" != "$tamlinux" ]; do
 	
 		    # quanto já foi copiado?
-		    [ -e ${img_lin} ] && sizeloclin=$(du -b ${img_lin} | cut -f1)
+		    [ -e ${img_lin} ] && sizeloclin=$(ls -ls ${img_lin} | cut -d' ' -f1)
 
 		    # qual a porcentagem do total?
 		    PORCENTAGEM=$((sizeloclin*100/tamlinux))

@@ -138,7 +138,7 @@ cria_torrent_linux() {
 	    btmakemetafile.bittorrent ${img_lin} http://${servidor}:6969/announce 2> /dev/null
 	
 	    #Escreve o tamanho da imagem no riso.service
-	    tam=`du -b ${img_lin} | cut -f1`
+	    tam=`ls -ls ${img_lin} | cut -d' ' -f1`
 	    sed "s/tamlinux=[0-9]*/tamlinux=${tam}/" < ${riso_service} > ${riso_service}.tmp
 	    mv ${riso_service}.tmp ${riso_service}
 	    log "Arquivo torrent do linux criado."
@@ -196,7 +196,6 @@ cria_torrent_windows() {
         btmakemetafile.bittorrent ${img_win} http://${servidor}:6969/announce 2> /dev/null
         cp $tor_win /var/www
 
-        tam=`du -b ${img_win} | cut -f1`
         sed "s/tamwindows=[0-9]*/tamwindows=${tam}/" < ${riso_service} > ${riso_service}.tmp
 	    mv ${riso_service}.tmp ${riso_service}
 	    log "Torrent do windows criado."
@@ -228,7 +227,7 @@ cria_rec() {
 	tar --exclude=risos --exclude=riso.service -cvf ${img_rec} *
 	
 	#Atualiza Sistema de arquivo da partição no riso.service
-    sa_partrec=`blkid ${partrec} | cut -d'"' -f4`
+    sa_partrec=`df -T | awk 'NR==2{print $1}'`
     sed "s/sa_partrec=[^<]*/sa_partrec=${sa_partrec}/" < ${riso_service} > ${riso_service}.tmp
     mv ${riso_service}.tmp ${riso_service}
 	log "Imagem de recuperação criada"
@@ -365,8 +364,6 @@ livecd() {
 
     log "Criando live-cd do riso."
     
-    apt-get install -y grub
-    
     #Modifica rc.local
     cat /etc/rc.local | grep -v exit > /etc/rc.local.tmp
     echo "bash /usr/riso/riso" >> /etc/rc.local.tmp
@@ -384,8 +381,6 @@ livecd() {
     cat /etc/rc.local | grep -v riso > /etc/rc.local.tmp
     mv /etc/rc.local.tmp /etc/rc.local
     chmod +x /etc/rc.local
-    
-    apt-get install -y grub2
     
     dialog \
 	--ok-label 'OK' \
@@ -580,10 +575,14 @@ else
 
 # Boot Type selected is GRUB
 
+apt-get install -y grub
+
 cp /boot/memtest86+.bin $WORKDIR/ISOTMP/boot/memtest
 find /boot -name 'stage2_eltorito' -exec cp {} $WORKDIR/ISOTMP/boot/grub/ \;
 find /usr -name 'stage2_eltorito' -exec cp {} $WORKDIR/ISOTMP/boot/grub/ \;
 find /lib -name 'stage2_eltorito' -exec cp {} $WORKDIR/ISOTMP/boot/grub/ \;
+
+apt-get install -y grub2
 
 cp /etc/remastersys/grub/splash.xpm.gz $WORKDIR/ISOTMP/boot/splash.xpm.gz
 

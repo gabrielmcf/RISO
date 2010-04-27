@@ -76,17 +76,15 @@ instala_risos() {
     su -c "cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys2"
     
     echo "Criando variáveis de configuração..."
-    echo -n "Qual a partição em que o sistema de recuperação foi instalado(Ex: /dev/sda4):"
-    read partrec
-    echo -n "Qual a partição em que o Windows foi instalado(Ex: /dev/sda1):"
-    read partwindows    
-    echo -n "Qual a partição em que o Linux foi instalado(Ex: /dev/sda2):"
-    read partlinux
-    echo -n "Qual a partição em que o área de troca(swap) foi instalado(Ex: /dev/sda3):"
-    read partswap
+    
+    #Pega partições
+    partrec=`df -T | awk 'NR==2{print $1}'`
+    partwindows=`os-prober | grep Windows | cut -d':' -f1`
+    partlinux=`os-prober | grep linux | cut -d':' -f1`
+    partswap=`blkid | grep swap | grep -v ram | cut -d':' -f1`
     
     #Pega sistema de arquivo das partiçoes.
-    sa_partrec=`blkid ${partrec} | cut -d'"' -f4`
+    sa_partrec=`df -T | awk 'NR==2{print $2}'`
     sa_partlinux=`blkid ${partlinux} | cut -d'"' -f4`
     sa_partwindows=`blkid ${partwindows} | cut -d'"' -f4`
     

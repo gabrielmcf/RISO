@@ -70,14 +70,14 @@ instala() {
 	    umount /mnt 2> /dev/null
 	    
 	    #verifica se desliga computador
-	    desligar=`grep "DESLIGAR" riso.conf | cut -d'=' -f2`
+	    desligar=`grep "DESLIGAR" ${riso_conf} | cut -d'=' -f2`
 	    if [ "$desligar" = "SIM" ]; then
 		log "Desligando computador."
 	        halt
 	    fi
 	
 	    #verifica se reinicia computador
-	    reiniciar=`grep "REINICIAR" riso.conf | cut -d'=' -f2`
+	    reiniciar=`grep "REINICIAR" ${riso_conf} | cut -d'=' -f2`
 	    if [ "$reiniciar" = "SIM" ]; then
 		log "Reiniciando computador."
 	        reboot
@@ -105,14 +105,14 @@ instala_windows() {
 	    (ntfsclone -r $img_win -O $partwindows && log "Fim da instalação do Windows") || log "ERRO: Windows não instalou com sucesso."
 	
 	    #verifica se desliga computador
-	    desligar=`grep "DESLIGAR" riso.conf | cut -d'=' -f2`
+	    desligar=`grep "DESLIGAR" ${riso_conf} | cut -d'=' -f2`
 	    if [ "$desligar" = "SIM" ]; then
 		log "Desligando computador."
 	        halt
 	    fi
 	
 	    #verifica se reinicia computador
-	    reiniciar=`grep "REINICIAR" riso.conf | cut -d'=' -f2`
+	    reiniciar=`grep "REINICIAR" ${riso_conf} | cut -d'=' -f2`
 	    if [ "$reiniciar" = "SIM" ]; then
 		log "Reiniciando computador."
 	        reboot
@@ -146,14 +146,14 @@ instala_linux() {
 	    umount /mnt 2> /dev/null
 	    
 	    #verifica se desliga computador
-	    desligar=`grep "DESLIGAR" riso.conf | cut -d'=' -f2`
+	    desligar=`grep "DESLIGAR" ${riso_conf} | cut -d'=' -f2`
 	    if [ "$desligar" = "SIM" ]; then
 		log "Desligando computador."
 	        halt
 	    fi
 	
 	    #verifica se reinicia computador
-	    reiniciar=`grep "REINICIAR" riso.conf | cut -d'=' -f2`
+	    reiniciar=`grep "REINICIAR" ${riso_conf} | cut -d'=' -f2`
 	    if [ "$reiniciar" = "SIM" ]; then
 		log "Reiniciando computador."
 	        reboot
@@ -179,7 +179,7 @@ baixa_imagens() {
 
     #Vefifica se imagem do windows já é a mais recente
 	sizelocwin="0"
-	[ -e ${img_win} ] && sizelocwin=$(du -b ${img_win} | cut -f1)
+	[ -e ${img_win} ] && sizelocwin=$(ls -ls ${img_win} | cut -d' ' -f1 )
 	if [ "$sizelocwin" = "$tamwindows" ]; then
         dialog \
         --title 'Atenção' \
@@ -192,7 +192,7 @@ baixa_imagens() {
 
     #Vefifica se imagem do linux já é a mais recente
 	sizeloclin="0"
-	[ -e ${img_lin} ] && sizeloclin=$(du -b ${img_lin} | cut -f1)
+	[ -e ${img_lin} ] && sizeloclin=$(ls -ls ${img_lin} | cut -d' ' -f1)
 	if [ "$sizeloclin" = "$tamlinux" ]; then
         dialog \
         --title 'Atenção' \
@@ -237,8 +237,8 @@ baixa_imagens() {
 	    while [ "$sizelocwin" != "$tamwindows" -o "$sizeloclin" != "$tamlinux" ]; do
 	
 		    # quanto já foi copiado?
-		    [ -e ${img_win} ] && sizelocwin=$(du -b ${img_win} | cut -f1)
-		    [ -e ${img_lin} ] && sizeloclin=$(du -b ${img_lin} | cut -f1)
+		    [ -e ${img_win} ] && sizelocwin=$(ls -ls ${img_win} | cut -d' ' -f1)
+		    [ -e ${img_lin} ] && sizeloclin=$(ls -ls ${img_lin} | cut -d' ' -f1)
 	            copiado=$((sizelocwin+sizeloclin))
 
 		    # qual a porcentagem do total?
@@ -271,7 +271,7 @@ baixa_imagem_windows() {
 
     #Vefifica se imagem já é a mais recente
 	sizelocwin="0"
-	[ -e ${img_win} ] && sizelocwin=$(du -b ${img_win} | cut -f1)
+	[ -e ${img_win} ] && sizelocwin=$(ls -ls ${img_win} | cut -d' ' -f1)
 	if [ "$sizelocwin" = "$tamwindows" ]; then
         dialog \
         --title 'Atenção' \
@@ -307,7 +307,7 @@ baixa_imagem_windows() {
 	    while [ "$sizelocwin" != "$tamwindows" ]; do
 	
 		    # quanto já foi copiado?
-		    [ -e ${img_win} ] && sizelocwin=$(du -b $img_win | cut -f1)
+		    [ -e ${img_win} ] && sizelocwin=$(ls -ls $img_win | cut -d' ' -f1)
 
 		    # qual a porcentagem do total?
 		    PORCENTAGEM=$((sizelocwin*100/tamwindows))
@@ -340,7 +340,7 @@ baixa_imagem_linux() {
 	
     #Vefifica se imagem já é a mais recente
 	sizeloclin="0"
-	[ -e ${img_lin} ] && sizeloclin=$(du -b ${img_lin} | cut -f1)
+	[ -e ${img_lin} ] && sizeloclin=$(ls -ls ${img_lin} | cut -d' ' -f1)
 	if [ "$sizeloclin" = "$tamlinux" ]; then
         dialog \
         --title 'Atenção' \
@@ -376,7 +376,7 @@ baixa_imagem_linux() {
 	    while [ "$sizeloclin" != "$tamlinux" ]; do
 	
 		    # quanto já foi copiado?
-		    [ -e ${img_lin} ] && sizeloclin=$(du -b ${img_lin} | cut -f1)
+		    [ -e ${img_lin} ] && sizeloclin=$(ls -ls ${img_lin} | cut -d' ' -f1)
 
 		    # qual a porcentagem do total?
 		    PORCENTAGEM=$((sizeloclin*100/tamlinux))
