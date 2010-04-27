@@ -55,6 +55,7 @@ inicia_servidor() {
 		bttrack --port 6969 --dfile dstate | grep pog &
 		cd ${dir_img}	
 		rtorrent ${tor_lin} ${tor_win}
+		log "Tracker finalizado para Windows e Linux."
 	else
 		dialog \
 		--title 'Atenção' \
@@ -75,6 +76,7 @@ inicia_servidor_windows() {
 		bttrack --port 6969 --dfile dstate | grep pog &
 		cd ${dir_img}
 		rtorrent ${tor_win}
+		log "Tracker finalizado para Windows."
 	else
 		dialog \
 		--title 'Atenção' \
@@ -95,6 +97,7 @@ inicia_servidor_linux() {
 		bttrack --port 6969 --dfile dstate | grep laialadaiasabadanaavemaria &
 		cd ${dir_img}		
 		rtorrent ${tor_lin}
+		log "Tracker finalizado para Linux."
 	else
 		dialog \
 		--title 'Atenção' \
@@ -192,14 +195,14 @@ pode estar incorreta.\n' \
 cria_torrent_windows() {
 	
 	if [ -e ${img_win} ]; then
-	    log "Criando torrent do windows."
+	    log "Criando arquivo torrent do windows."
         btmakemetafile.bittorrent ${img_win} http://${servidor}:6969/announce 2> /dev/null
 
         #Escreve o tamanho da imagem no riso.service
 	    tam=`ls -ls ${img_win} | cut -d' ' -f1`
         sed "s/tamwindows=[0-9]*/tamwindows=${tam}/" < ${riso_service} > ${riso_service}.tmp
 	    mv ${riso_service}.tmp ${riso_service}
-	    log "Torrent do windows criado."
+	    log "Arquivo torrent do windows criado."
     else
         dialog \
         --title 'Atenção' \
@@ -214,7 +217,7 @@ cria_torrent_windows() {
 #Cria imagem do SO com R.I.S.O. instalado..
 cria_rec() {
 
-    log "Criando imagem de recuperação"
+    log "Criando imagem de recuperação."
 	echo "Removendo imagem antiga do windows..."
 	rm -f ${img_win}
 	rm -f ${tor_win}
@@ -231,7 +234,7 @@ cria_rec() {
     sa_partrec=`df -T | awk 'NR==2{print $2}'`
     sed "s/sa_partrec=[^<]*/sa_partrec=${sa_partrec}/" < ${riso_service} > ${riso_service}.tmp
     mv ${riso_service}.tmp ${riso_service}
-	log "Imagem de recuperação criada"
+	log "Imagem de recuperação criada."
 	
 }
 
@@ -250,7 +253,7 @@ atualiza() {
 		dialog \
 		--ok-label 'OK' \
 		--title 'ERRO' \
-		--msgbox '\n   Esta versão já é a mais recente'\
+		--msgbox '\n   Esta versão já é a mais recente.'\
 		7 40
 		log "ERRO: RISO já é a versão mais nova."
 	fi

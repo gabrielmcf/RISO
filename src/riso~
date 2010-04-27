@@ -69,6 +69,7 @@ instala() {
 	    cd ..
 	    umount /mnt 2> /dev/null
 	    
+	    log "Instalação do Windows e do Linux finalizada."
 	    update-grub
 	    
 	    #verifica se desliga computador
@@ -97,7 +98,7 @@ instala() {
 
 #Instala imagem do Windows.
 instala_windows() {
-    log "Iniciando instalação do Windows"
+    log "Iniciando instalação do Windows."
     if [ -e ${img_win} ]; then
 	    #Desmonta partiçoes
 	    umount $partwindows 2> /dev/null
@@ -106,6 +107,7 @@ instala_windows() {
 	    log "Instalação do Windows iniciada."
 	    (ntfsclone -r $img_win -O $partwindows && log "Fim da instalação do Windows") || log "ERRO: Windows não instalou com sucesso."
 	
+	    log "Instalação do Windows finalizada."
 	    update-grub
 	
 	    #verifica se desliga computador
@@ -149,6 +151,7 @@ instala_linux() {
 	    cd ..
 	    umount /mnt 2> /dev/null
 	    
+	    log "Instalação do Linux fianlizada."
 	    update-grub
 	    
 	    #verifica se desliga computador
