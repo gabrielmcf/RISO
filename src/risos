@@ -194,8 +194,9 @@ cria_torrent_windows() {
 	if [ -e ${img_win} ]; then
 	    log "Criando torrent do windows."
         btmakemetafile.bittorrent ${img_win} http://${servidor}:6969/announce 2> /dev/null
-        cp $tor_win /var/www
 
+        #Escreve o tamanho da imagem no riso.service
+	    tam=`ls -ls ${img_win} | cut -d' ' -f1`
         sed "s/tamwindows=[0-9]*/tamwindows=${tam}/" < ${riso_service} > ${riso_service}.tmp
 	    mv ${riso_service}.tmp ${riso_service}
 	    log "Torrent do windows criado."
@@ -227,7 +228,7 @@ cria_rec() {
 	tar --exclude=risos --exclude=riso.service -cvf ${img_rec} *
 	
 	#Atualiza Sistema de arquivo da partição no riso.service
-    sa_partrec=`df -T | awk 'NR==2{print $1}'`
+    sa_partrec=`df -T | awk 'NR==2{print $2}'`
     sed "s/sa_partrec=[^<]*/sa_partrec=${sa_partrec}/" < ${riso_service} > ${riso_service}.tmp
     mv ${riso_service}.tmp ${riso_service}
 	log "Imagem de recuperação criada"
