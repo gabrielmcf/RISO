@@ -15,7 +15,7 @@ arq_log=$dir_riso/riso.log
 #Função de Log
 log(){
     [ -e $arq_log ] || touch $arq_log
-    echo `date +"%F %H:%M:%S"` "RISO: $*" >> $arq_log 
+    echo `date +"%F %H:%M:%S"` "RISOS: $*" >> $arq_log 
 }
 
 #Carrega variaveis do arquivo riso.service para variáveis do sistema.
