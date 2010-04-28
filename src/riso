@@ -10,6 +10,7 @@ tor_win=$img_win.torrent
 tor_lin=$img_lin.torrent
 tab_part=$dir_img/tab_part
 riso_conf=$dir_riso/riso.conf
+riso_part=$dir_riso/riso.part
 arq_log=$dir_riso/riso.log
 
 #Função de Log
@@ -18,7 +19,7 @@ log(){
     echo `date +"%F %H:%M:%S"` "RISO: $*" >> $arq_log 
 }
 
-#Carrega variaveis do arquivo riso.service para variáveis do sistema.
+#Carrega variaveis disponibilizadas pelo avahi para variáveis do sistema.
 carrega_variaveis() {
 
     avahi_saida=`avahi-browse -rtp _RISO._tcp | grep '='`
@@ -45,12 +46,23 @@ carrega_variaveis() {
     sa_partwindows=`(cut -d ';' -f10 | cut -d '"' -f14 | cut -d '=' -f2) <<< ${avahi_saida}`
     sa_partlinux=`(cut -d ';' -f10 | cut -d '"' -f16 | cut -d '=' -f2) <<< ${avahi_saida}`
     sa_partrec=`(cut -d ';' -f10 | cut -d '"' -f18 | cut -d '=' -f2) <<< ${avahi_saida}`
+    
+    #Atualiza arquivo de variaveis.
+    echo 'partwindows='$partwindows > $riso_part
+    echo 'partlinux='$partlinux >> $riso_part
+    echo 'sa_partwindows='$sa_partwindows >> $riso_part
+    echo 'sa_partlinux='$sa_partlinux >> $riso_part
+    
 }
 
 #Instala imagens do Linux e do Windows.
 instala() {
     log "Iniciando instalação do Windows e do Linux."
     if [ -e ${img_win} -a -e ${img_lin} ]; then
+    
+        #Carrega variáveis
+        [ -z $partwindows -o -z $sa_partwindows -o -z $partlinux -o -z $sa_partlinux ] && . $riso_part
+    
 	    #Desmonta partiçoes.
 	    umount $partwindows 2> /dev/null
 	    umount $partlinux 2> /dev/null
@@ -94,12 +106,17 @@ instala() {
 		log "ERRO: Não existem imagens prontas."
 		return 5
 	fi    
+	
 }
 
 #Instala imagem do Windows.
 instala_windows() {
     log "Iniciando instalação do Windows."
     if [ -e ${img_win} ]; then
+    
+        #le do arquivo de variaveis
+        [ -z $partwindows -o -z $sa_partwindows ] && . $riso_part  
+        
 	    #Desmonta partiçoes
 	    umount $partwindows 2> /dev/null
 
@@ -139,6 +156,10 @@ instala_windows() {
 instala_linux() {
     log "Iniciando instalação do Linux."
     if [ -e ${img_lin} ]; then
+    
+       #Carrega variáveis
+       [ -z $partlinux -o -z $sa_partlinux ] && . $riso_part
+    
 		#desmonta partiçoes.
 	    umount $partlinux 2> /dev/null
 
@@ -188,7 +209,7 @@ baixa_imagens() {
 
     #Vefifica se imagem do windows já é a mais recente
 	sizelocwin="0"
-	[ -e ${img_win} ] && sizelocwin=$(ls -ls ${img_win} | cut -d' ' -f1 )
+	[ -e ${img_win} ] && sizelocwin=$(du ${img_win} | cut -f1 )
 	if [ "$sizelocwin" = "$tamwindows" ]; then
         dialog \
         --title 'Atenção' \
@@ -201,7 +222,7 @@ baixa_imagens() {
 
     #Vefifica se imagem do linux já é a mais recente
 	sizeloclin="0"
-	[ -e ${img_lin} ] && sizeloclin=$(ls -ls ${img_lin} | cut -d' ' -f1)
+	[ -e ${img_lin} ] && sizeloclin=$(du ${img_lin} | cut -f1)
 	if [ "$sizeloclin" = "$tamlinux" ]; then
         dialog \
         --title 'Atenção' \
@@ -226,9 +247,9 @@ baixa_imagens() {
 	
 	#Inicia download das imagens em terminal virtual.
 	log "Iniciando download dos torrent do Windows."
-	(scp root@${servidor}:${tor_win} ${tor_win} && log "Torrent do Windows baixado com sucesso.") || log "ERRO: Torrent do Windows não foi baixado."
+	(scp -o StrictHostKeyChecking=no root@${servidor}:${tor_win} ${tor_win} && log "Torrent do Windows baixado com sucesso.") || log "ERRO: Torrent do Windows não foi baixado."
 	log "Iniciando download do torrent do Linux."
-	(scp root@${servidor}:${tor_lin} ${tor_lin} && log "Torrent do Linux baixado com sucesso.") || log "ERRO: Torrent do Linux não foi baixado."
+	(scp -o StrictHostKeyChecking=no root@${servidor}:${tor_lin} ${tor_lin} && log "Torrent do Linux baixado com sucesso.") || log "ERRO: Torrent do Linux não foi baixado."
 	cd ${dir_img}
 	log "Iniciando download das imagens do Windows e do Linux."
 	screen -d -m rtorrent ${tor_win} ${tor_lin}
@@ -243,11 +264,11 @@ baixa_imagens() {
 	    sizelocwin="0"
 	    sizeloclin="0"
 	    total=$((tamwindows+tamlinux))
-	    while [ "$sizelocwin" != "$tamwindows" -o "$sizeloclin" != "$tamlinux" ]; do
+	    while [ "$sizelocwin" -lt "$tamwindows" -o "$sizeloclin" -lt "$tamlinux" ]; do
 	
 		    # quanto já foi copiado?
-		    [ -e ${img_win} ] && sizelocwin=$(ls -ls ${img_win} | cut -d' ' -f1)
-		    [ -e ${img_lin} ] && sizeloclin=$(ls -ls ${img_lin} | cut -d' ' -f1)
+		    [ -e ${img_win} ] && sizelocwin=$(du ${img_win} | cut -f1)
+		    [ -e ${img_lin} ] && sizeloclin=$(du ${img_lin} | cut -f1)
 	            copiado=$((sizelocwin+sizeloclin))
 
 		    # qual a porcentagem do total?
@@ -257,22 +278,23 @@ baixa_imagens() {
 		    echo $PORCENTAGEM
 		
 		    # aguarda até a próxima checagem
-		    sleep 5
+		    sleep 3
 	    done	
 
 	    # cópia finalizada, mostra a porcentagem final
 	    echo 100
 	    log "Download das imagens do Windows e Linux finalizado."
-	    sleep 3
+	    sleep 30
 	
     ) | dialog --title "Baixando imagens..." --gauge "Baixando imagens do Windows e Linux do servidor RISOS para maquina local" 8 50 0
 
 	log "Finalizando rtorrent."
 	#Finaliza download
 	killall rtorrent
+	
 }
 
-#baixa imagem do Windows.
+#Baixa imagem do Windows.
 baixa_imagem_windows() {
 	log "Iniciando download do Windows."
 	echo "Conectando ao servidor..."
@@ -280,7 +302,7 @@ baixa_imagem_windows() {
 
     #Vefifica se imagem já é a mais recente
 	sizelocwin="0"
-	[ -e ${img_win} ] && sizelocwin=$(ls -ls ${img_win} | cut -d' ' -f1)
+	[ -e ${img_win} ] && sizelocwin=$(du ${img_win} | cut -f1)
 	if [ "$sizelocwin" = "$tamwindows" ]; then
         dialog \
         --title 'Atenção' \
@@ -300,7 +322,7 @@ baixa_imagem_windows() {
 
 	#Inicia download da imagen em terminal virtual.
 	log "Inicia o download do torrent do Windows."
-	(scp root@${servidor}:${tor_win} ${tor_win} && log "Download do torrent do Windows finalizado.") || log "ERRO: O torrent do Windows não foi baixado."
+	(scp -o StrictHostKeyChecking=no root@${servidor}:${tor_win} ${tor_win} && log "Download do torrent do Windows finalizado.") || log "ERRO: O torrent do Windows não foi baixado."
 	cd $dir_img
 	log "Iniciando Download do Windows."
 	screen -d -m rtorrent $tor_win
@@ -313,10 +335,10 @@ baixa_imagem_windows() {
 	# com o tamanho total do arquivo em riso.service.
     (
 	    sizelocwin="0"
-	    while [ "$sizelocwin" != "$tamwindows" ]; do
+	    while [ "$sizelocwin" -lt "$tamwindows" ]; do
 	
 		    # quanto já foi copiado?
-		    [ -e ${img_win} ] && sizelocwin=$(ls -ls $img_win | cut -d' ' -f1)
+		    [ -e ${img_win} ] && sizelocwin=$(du $img_win | cut -f1)
 
 		    # qual a porcentagem do total?
 		    PORCENTAGEM=$((sizelocwin*100/tamwindows))
@@ -325,19 +347,20 @@ baixa_imagem_windows() {
 		    echo $PORCENTAGEM
 		
 		    # aguarda até a próxima checagem
-		    sleep 5
+		    sleep 3
 	    done	
 
 	    # cópia finalizada, mostra a porcentagem final
 	    echo 100
 	    log "Download do Windows finalizado."
-	    sleep 5
+	    sleep 30
 	
     ) | dialog --title "Baixando imagem..." --gauge "Baixando imagem do Windows do servidor RISOS para maquina local" 8 50 0
 
 	log "Finalizando rtorrent."
 	#Finaliza download
 	killall rtorrent
+	
 }
 
 #Baixa imagem linux.
@@ -349,7 +372,7 @@ baixa_imagem_linux() {
 	
     #Vefifica se imagem já é a mais recente
 	sizeloclin="0"
-	[ -e ${img_lin} ] && sizeloclin=$(ls -ls ${img_lin} | cut -d' ' -f1)
+	[ -e ${img_lin} ] && sizeloclin=$(du ${img_lin} | cut -f1)
 	if [ "$sizeloclin" = "$tamlinux" ]; then
         dialog \
         --title 'Atenção' \
@@ -369,7 +392,7 @@ baixa_imagem_linux() {
 
     #Inicia download da imagen em terminal virtual.
 	log "Baixando torrent do Linux."
-	(scp root@${servidor}:${tor_lin} ${tor_lin} && log "Torrent do Linux baixado com sucesso.") || log "ERRO: Erro ao baixar torrent do Linux."
+	(scp -o StrictHostKeyChecking=no root@${servidor}:${tor_lin} ${tor_lin} && log "Torrent do Linux baixado com sucesso.") || log "ERRO: Erro ao baixar torrent do Linux."
 	cd ${dir_img}
 	log "Iniciando download do Linux."
 	screen -d -m rtorrent ${tor_lin}
@@ -382,10 +405,10 @@ baixa_imagem_linux() {
 	# com o tamanho total do arquivo em riso.service.
     (
 	    sizeloclin="0"
-	    while [ "$sizeloclin" != "$tamlinux" ]; do
+	    while [ "$sizeloclin" -lt "$tamlinux" ]; do
 	
 		    # quanto já foi copiado?
-		    [ -e ${img_lin} ] && sizeloclin=$(ls -ls ${img_lin} | cut -d' ' -f1)
+		    [ -e ${img_lin} ] && sizeloclin=$(du ${img_lin} | cut -f1)
 
 		    # qual a porcentagem do total?
 		    PORCENTAGEM=$((sizeloclin*100/tamlinux))
@@ -394,13 +417,13 @@ baixa_imagem_linux() {
 		    echo $PORCENTAGEM
 		
 		    # aguarda até a próxima checagem
-		    sleep 1
+		    sleep 3
 	    done	
 
 	    # cópia finalizada, mostra a porcentagem final
 	    echo 100
 	    log "Download do Linux finalizado."
-	    sleep 5
+	    sleep 30
     ) | dialog --title "Baixando imagem..." --gauge "Baixando imagem do Linux do servidor RISOS para maquina local" 8 50 0
 
 	log "Finalizando rtorrent"
@@ -447,7 +470,7 @@ baixa_rec() {
 
 	#Baixa refaz tabela de partiçao
 	log "Baixando tabela de partições."
-	(scp root@${servidor}:${tab_part} ${tab_part} && log "Tabela de partições baixada com sucesso") || log "ERRO: Não foi possível baixar tabela de partições."
+	(scp -o StrictHostKeyChecking=no root@${servidor}:${tab_part} ${tab_part} && log "Tabela de partições baixada com sucesso") || log "ERRO: Não foi possível baixar tabela de partições."
 	swapoff -a
 	log "Montando nova tabela de partições."
 	sfdisk -f /dev/sda < ${tab_part}
@@ -466,7 +489,7 @@ baixa_rec() {
 	mount ${partrec} /mnt
 	cd /mnt
 	log "Iniciando o download da imagem de recuperação."
-	(scp root@${servidor}:${img_rec} ./rec.tar && log "Download da imagem de recuperação finalizada.") || log "ERRO: Não foi possível realizar o download da imagem de recuperação."
+	(scp -o StrictHostKeyChecking=no root@${servidor}:${img_rec} ./rec.tar && log "Download da imagem de recuperação finalizada.") || log "ERRO: Não foi possível realizar o download da imagem de recuperação."
 }
 
 #Define configurações do riso
@@ -531,11 +554,12 @@ creditos() {
 		        Gabriel de Souza Brandao         \n
 		         Marcio J. Menezes Jr.           \n
 		    Gabriel Machado de Castro Fonseca    \n
-		    André Paulista Gordinho da Silva     \n
+		      André Luiz Silveira Herculano      \n
 		                                         \n
 		           www.dgo.cefetmg.br            \n
 		                                         \n'\
 		  0 0
+		  
 }
 
 #Checklist de seleção.
@@ -554,6 +578,7 @@ menu_instala_imagens() {
 		'"Linux"') instala_linux;;
 		'"Windows" "Linux"') instala;;
 	esac
+	
 }
 
 #Checklist de seleção.
@@ -572,6 +597,7 @@ menu_baixa_imagens() {
 		'"Linux"') baixa_imagem_linux && instala_linux;;
 		'"Windows" "Linux"') baixa_imagens && instala;;
 	esac
+	
 }
 
 #Menu principal.
@@ -608,6 +634,7 @@ menu() {
 	esac	
 
 	done
+	
 }
 
 #Avalia argumentos.
@@ -712,13 +739,16 @@ avaliar_args() {
 		done
 	fi
 	reboot
+	
 }
 
-#Verifica se usuário é root
+#Verifica se usuário é root antes de iniciar o riso.
 USER=`id -u`
 if [ $USER == '0' ]; then  
+    log "Iniciando RISO --------------------------------------------------------"
     avaliar_args $@
 	menu
+	log "Encerrando RISO -------------------------------------------------------"
 	clear
 else
 	echo 'Só o root pode fazer isso, jovenzinho!'

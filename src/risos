@@ -52,7 +52,7 @@ inicia_servidor() {
 
 	if [ -e ${img_win} -a -e ${img_lin} ]; then
 	    log "Tracker iniciado para Windows e Linux."
-		bttrack --port 6969 --dfile dstate | grep pog &
+		bttrack --port 6969 --dfile dstate | grep laialadaiasabadanaavemaria &
 		cd ${dir_img}	
 		rtorrent ${tor_lin} ${tor_win}
 		log "Tracker finalizado para Windows e Linux."
@@ -73,7 +73,7 @@ inicia_servidor_windows() {
 
 	if [ -e ${img_win} ]; then
     	log "Tracker iniciado para Windows."
-		bttrack --port 6969 --dfile dstate | grep pog &
+		bttrack --port 6969 --dfile dstate | grep laialadaiasabadanaavemaria &
 		cd ${dir_img}
 		rtorrent ${tor_win}
 		log "Tracker finalizado para Windows."
@@ -133,6 +133,7 @@ cria_linux() {
 	log "Imagem do Linux criada."
 }
 
+#Cria arquivo .torrent para imagem do linux
 cria_torrent_linux() {
 	
 	if [ -e $img_lin ]; then
@@ -141,17 +142,17 @@ cria_torrent_linux() {
 	    btmakemetafile.bittorrent ${img_lin} http://${servidor}:6969/announce 2> /dev/null
 	
 	    #Escreve o tamanho da imagem no riso.service
-	    tam=`ls -ls ${img_lin} | cut -d' ' -f1`
+	    tam=`du ${img_lin} | cut -f1`
 	    sed "s/tamlinux=[0-9]*/tamlinux=${tam}/" < ${riso_service} > ${riso_service}.tmp
 	    mv ${riso_service}.tmp ${riso_service}
-	    log "Arquivo torrent do linux criado."
+	    log "Arquivo torrent do Linux criado."
 	else
         dialog \
         --title 'Atenção' \
         --ok-label 'OK' \
-        --msgbox '\nVocê ainda não criou a imagem do linux.' \
+        --msgbox '\nVocê ainda não criou a imagem do Linux.' \
         7 44
-        log "ERRO: Ao criar arquivo torrent do linux, não existe imagem pronta."
+        log "ERRO: Ao criar arquivo torrent do Linux, não existe imagem pronta."
         return 2
 	fi
 	
@@ -191,7 +192,7 @@ pode estar incorreta.\n' \
 	
 }
 
-#Cria imagem do Windows.
+#Cria arquivo .torrent para imagem do linux.
 cria_torrent_windows() {
 	
 	if [ -e ${img_win} ]; then
@@ -199,7 +200,7 @@ cria_torrent_windows() {
         btmakemetafile.bittorrent ${img_win} http://${servidor}:6969/announce 2> /dev/null
 
         #Escreve o tamanho da imagem no riso.service
-	    tam=`ls -ls ${img_win} | cut -d' ' -f1`
+	    tam=`du ${img_win} | cut -f1`
         sed "s/tamwindows=[0-9]*/tamwindows=${tam}/" < ${riso_service} > ${riso_service}.tmp
 	    mv ${riso_service}.tmp ${riso_service}
 	    log "Arquivo torrent do windows criado."
@@ -214,17 +215,17 @@ cria_torrent_windows() {
     fi
 }
 
-#Cria imagem do SO com R.I.S.O. instalado..
+#Cria imagem do SO com R.I.S.O. instalado.
 cria_rec() {
 
     log "Criando imagem de recuperação."
 	echo "Removendo imagem antiga do windows..."
 	rm -f ${img_win}
 	rm -f ${tor_win}
-	echo "Removendo imagem antiga do linux..."
+	echo "Removendo imagem antiga do Linux..."
 	rm -f ${img_lin}
 	rm -f ${tor_lin}
-	echo "Removendo imagem antiga do linux de recuperação..."
+	echo "Removendo imagem antiga do Linux de recuperação..."
 	rm -f ${img_rec}
 	sfdisk -d /dev/sda > ${tab_part}
 	cd /
@@ -257,6 +258,7 @@ atualiza() {
 		7 40
 		log "ERRO: RISO já é a versão mais nova."
 	fi
+	
 }
 
 #Pessoas que desenvolveram esse material.
@@ -275,7 +277,7 @@ creditos() {
 		        Gabriel de Souza Brandao         \n
 		         Marcio J. Menezes Jr.           \n
 		    Gabriel Machado de Castro Fonseca    \n
-		    André Paulista Gordinho da Silva     \n
+		      André Luiz Silveira Herculano      \n
 		                                         \n
 		           www.dgo.cefetmg.br            \n
 		                                         \n'\
@@ -364,13 +366,15 @@ mais rápido possível.' \
 		0 0
 }
 
+#Cria um livecd do SO com o R.I.S.O instalado.
+#Essa função foi criada com base no codigo do remastersys.
 livecd() {
 
     log "Criando live-cd do riso."
     
     #Modifica rc.local
     cat /etc/rc.local | grep -v exit > /etc/rc.local.tmp
-    echo "rm /etc/avahi/services/riso.service" >> etc/rc.local.tmp
+    echo "rm /etc/avahi/services/riso.service" >> /etc/rc.local.tmp
     echo "rm /usr/riso/risos" >> /etc/rc.local.tmp
     echo "rm /usr/bin/risos" >> /etc/rc.local.tmp
     echo "bash /usr/riso/riso" >> /etc/rc.local.tmp
@@ -401,6 +405,8 @@ Identifique seu dev com: cdrecore -scanbus' \
     log "Live-cd do riso criado."
 }
 
+#Função usada para criar o livecd do riso.
+#Essa função foi criada com base no codigo do remastersys.
 cdfs (){
 
 #removing popularity-contest as it causes a problem when installing with ubiquity
@@ -810,6 +816,8 @@ fi
 
 }
 
+#Gera arquivo iso do livecd do riso.
+#Essa função foi criada com base no codigo do remastersys.
 iso (){
 
     CREATEISO="`which mkisofs`"
@@ -931,6 +939,7 @@ menu_inicia_servidor() {
 		'"Linux"') inicia_servidor_linux;;
 		'"Windows" "Linux"') inicia_servidor;;
 	esac
+	
 }
 
 #Checklist de seleção.
@@ -954,6 +963,7 @@ menu_criar_imagens() {
 		'"Linux" "Recuperacao"') cria_rec && cria_linux && cria_torrent_linux && imagens_criadas;;
 		'"Windows" "Linux" "Recuperacao"') cria_rec && cria_windows && cria_torrent_windows && cria_linux && cria_torrent_linux && imagens_criadas;;
 	esac
+	
 }
 
 #Checklist de seleção.
@@ -972,6 +982,7 @@ menu_criar_torrents() {
 		'"Linux"') cria_torrent_linux && torrent_linux_criado;;
 		'"Windows" "Linux"') cria_torrent_windows && cria_torrent_linux && torrents_criados;;
 	esac
+	
 }
 
 #Menu pricipal.
@@ -1008,12 +1019,15 @@ menu() {
 		esac	
 
 	done
+	
 }
 
-#Verifica se usuário é root
+#Verifica se usuário é root antes de iniciar o risos.
 USER=`id -u`
 if [ $USER == '0' ]; then
+    log "Iniciando RISOS -------------------------------------------------------"
     carrega_variaveis && menu
+    log "Finalizando RISOS -----------------------------------------------------"
 	clear
 else
 	echo 'Só o root pode fazer isso, jovenzinho!'
