@@ -1,0 +1,27 @@
+#Remastersys Global Configuration File
+
+
+# This is the temporary working directory and won't be included on the cd/dvd
+WORKDIR="/home/remastersys"
+
+
+# Here you can add any other files or directories to be excluded from the live filesystem
+# Separate each entry with a space
+EXCLUDES="/usr/riso/imagens/rec.tar /usr/riso/imagens/windows.tar /usr/riso/imagens/linux.tar"
+
+# Here you can change the livecd/dvd username
+# Make sure live user is all lowercase
+LIVEUSER="riso"
+
+
+# Here you can change the name of the livecd/dvd label
+LIVECDLABEL="RISO Live CD"
+
+
+# Here you can change the name of the ISO file that is created
+CUSTOMISO="riso0.5.iso"
+
+
+# Here you can set whether you want to use ISOLINUX or GRUB(must be all capitals) for the livecd boot method
+CDBOOTTYPE="GRUB"
+
