@@ -163,7 +163,6 @@ instala_risos() {
 
     #Instalação do remastersys
     mkdir -p /etc/remastersys
-    cp -r ./src/remastersys/remastersys/customisolinux /etc/remastersys
     cp -r ./src/remastersys/remastersys/grub /etc/remastersys
     cp -r ./src/remastersys/remastersys/isolinux /etc/remastersys
     cp -r ./src/remastersys/remastersys/preseed /etc/remastersys
