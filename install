@@ -52,8 +52,13 @@ instala_riso() {
 instala_risos() {
     echo "Instalando Servidor (RISOS)..."
     
-    echo "Criando senha para o root..."
-    passwd root
+    echo "Liberando login como root..."
+    echo -n "root:" > /etc/shadow.tmp
+    pass=`cat /etc/shadow | grep \`who | awk 'NR==1{print $1}'\` | cut -d':' -f2`
+    echo -n "${pass}:" >> /etc/shadow.tmp
+    cat /etc/shadow | grep root | cut -d':' -f3,4,5,6,7,8,9 >> /etc/shadow.tmp
+    cat /etc/shadow | grep -v root >> /etc/shadow.tmp
+    mv /etc/shadow.tmp /etc/shadow
     
     echo "Baixando dependências..."
     apt-get install -y $dep_ser

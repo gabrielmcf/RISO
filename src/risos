@@ -228,6 +228,7 @@ cria_rec() {
 	echo "Removendo imagem antiga do Linux de recuperação..."
 	rm -f ${img_rec}
 	sfdisk -d /dev/sda > ${tab_part}
+	umount -a 2> /dev/null
 	cd /
 	tar --exclude=/home/remastersys --exclude=/proc --exclude=risos --exclude=riso.service -cvf ${img_rec} *
 	
@@ -595,7 +596,10 @@ find /boot -name 'stage2_eltorito' -exec cp {} $WORKDIR/ISOTMP/boot/grub/ \;
 find /usr -name 'stage2_eltorito' -exec cp {} $WORKDIR/ISOTMP/boot/grub/ \;
 find /lib -name 'stage2_eltorito' -exec cp {} $WORKDIR/ISOTMP/boot/grub/ \;
 
+mv /etc/default/grub /etc/default/grub.tmp
 apt-get install -y grub2
+mv /etc/default/grub.tmp /etc/default/grub
+
 
 cp /etc/remastersys/grub/splash.xpm.gz $WORKDIR/ISOTMP/boot/splash.xpm.gz
 
