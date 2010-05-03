@@ -61,7 +61,7 @@ instala() {
     if [ -e ${img_win} -a -e ${img_lin} ]; then
     
         #Carrega variáveis
-        [ -z $partwindows -o -z $sa_partwindows -o -z $partlinux -o -z $sa_partlinux ] && . $riso_part
+        [ -z $partwindows -o -z $sa_partwindows ] && [ -z $partlinux -o -z $sa_partlinux ] && . $riso_part
     
 	    #Desmonta partiçoes.
 	    umount $partwindows 2> /dev/null
