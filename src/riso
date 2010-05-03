@@ -81,6 +81,7 @@ instala() {
 	    cd ..
 	    umount /mnt 2> /dev/null
 	    
+	    sleep 3
 	    log "Instalação do Windows e do Linux finalizada."
 	    update-grub
 	    
@@ -172,7 +173,8 @@ instala_linux() {
 	    cd ..
 	    umount /mnt 2> /dev/null
 	    
-	    log "Instalação do Linux fianlizada."
+	    sleep 3
+	    log "Instalação do Linux finalizada."
 	    update-grub
 	    
 	    #verifica se desliga computador
