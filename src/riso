@@ -77,6 +77,7 @@ instala() {
 	    mount $partlinux /mnt
 	    cd /mnt
 	    log "Instalação do Linux iniciada."
+	    rm -f boot/grub/grub.cfg 
 	    (tar -xvf $img_lin && log "Fim da instalação do Linux.") || log "ERRO: Linux não foi instalado com sucesso."
 	    cd ..
 	    umount /mnt 2> /dev/null
@@ -169,6 +170,7 @@ instala_linux() {
 	    mount $partlinux /mnt
 	    cd /mnt
 	    log "Instalação do Linux iniciada."
+	    rm -f boot/grub/grub.cfg 
 	    (tar -xvf $img_lin && log "Fim da instalação do Linux.") || log "ERRO: Linux instalou com sucesso."
 	    cd ..
 	    umount /mnt 2> /dev/null
