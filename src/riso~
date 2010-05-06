@@ -77,10 +77,12 @@ instala() {
 	    mount $partlinux /mnt
 	    cd /mnt
 	    log "Instalação do Linux iniciada."
+	    rm -f boot/grub/grub.cfg 
 	    (tar -xvf $img_lin && log "Fim da instalação do Linux.") || log "ERRO: Linux não foi instalado com sucesso."
 	    cd ..
 	    umount /mnt 2> /dev/null
 	    
+	    sleep 3
 	    log "Instalação do Windows e do Linux finalizada."
 	    update-grub
 	    
@@ -168,6 +170,7 @@ instala_linux() {
 	    mount $partlinux /mnt
 	    cd /mnt
 	    log "Instalação do Linux iniciada."
+	    rm -f boot/grub/grub.cfg 
 	    (tar -xvf $img_lin && log "Fim da instalação do Linux.") || log "ERRO: Linux instalou com sucesso."
 	    cd ..
 	    umount /mnt 2> /dev/null
@@ -516,6 +519,14 @@ atualiza() {
 	if [ "$?" -eq "0" ]; then
 		log "Iniciando download do script novo."
 		(wget 200.131.37.236/riso/riso0.5 -O /usr/riso/riso && log "RISO atualizado com sucesso.") || log "ERRO: Não foi possível baixar o novo script."
+		
+		#Menssagem de atualizado com sucesso.
+		dialog \
+	        --ok-label 'OK' \
+        	--title 'Atenção' \
+        	--msgbox '\n    RISO atualizado com sucesso.\n' \
+		    7 40
+		
 		bash /usr/riso/riso
 		exit
 	else

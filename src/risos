@@ -256,6 +256,14 @@ atualiza() {
 	if [ "$?" -eq "0" ]; then
 		log "Iniciando download do script novo."
 		(wget 200.131.37.236/riso/risos0.5 -O /usr/riso/risos && log "RISO atualizado com sucesso.") || log "ERRO: Não foi possível baixar o novo script."
+		
+		#Menssagem de atualizado com sucesso.
+		dialog \
+	        --ok-label 'OK' \
+        	--title 'Atenção' \
+        	--msgbox '\n   RISOS atualizado com sucesso.\n' \
+		    7 39
+		
 		bash /usr/riso/risos
 		exit
 	else
