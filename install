@@ -193,6 +193,7 @@ instala_risos() {
     #Se estiver usando windows 7. Muda arquivo de boot para não usar mais UUID.
     windows7=`os-prober | grep "Windows 7"`
     if [ ! -z "$windows7" ]; then
+        echo "Configurando Windows 7..."
 	    umount /mnt 2> /dev/null
 	    mount ${partwindows} /mnt
 	    cp ./conf/BCD /mnt/Boot/BCD
