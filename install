@@ -189,6 +189,15 @@ instala_risos() {
     if [ -f /etc/remastersys.conf.old ]; then
     mv /etc/remastersys.conf.old /etc/remastersys.conf
     fi
+    
+    #Se estiver usando windows 7. Muda arquivo de boot para não usar mais UUID.
+    windows7=`os-prober | grep "Windows 7"`
+    if [ ! -z "$windows7" ]; then
+	    umount /mnt 2> /dev/null
+	    mount ${partwindows} /mnt
+	    cp ./conf/BCD /mnt/Boot/BCD
+	    umount /mnt 2> /dev/null
+    fi
 
     echo "Sistema instalado com sucesso"
     echo "Tente risos para iniciar"
