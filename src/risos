@@ -1,17 +1,17 @@
 #!/bin/bash
 
 #Variáveis do script
-dir_riso=/usr/riso
-dir_img=$dir_riso/imagens
-img_win=$dir_img/windows.img
-img_lin=$dir_img/linux.tar
-img_rec=$dir_img/rec.tar
-tor_win=$img_win.torrent
-tor_lin=$img_lin.torrent
-riso_service=/etc/avahi/services/riso.service
-tab_part=$dir_img/tab_part
-riso_part=$dir_riso/riso.part
-arq_log=$dir_riso/riso.log
+dir_riso=/usr/riso	#diretorio do riso
+dir_img=$dir_riso/imagens	#diretorio da imagem
+img_win=$dir_img/windows.img	#arquivo da imagem do windows
+img_lin=$dir_img/linux.tar	#arquivo da imagem do linux
+img_rec=$dir_img/rec.tar	#arquivo da imagem da recuperacao (ubuntu_server)
+tor_win=$img_win.torrent	#torrent da imagem do windows
+tor_lin=$img_lin.torrent	#torrent da imagem do linux
+riso_service=/etc/avahi/services/riso.service	#servico do servidor de imagem
+tab_part=$dir_img/tab_part	#NAO SEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEI
+riso_part=$dir_riso/riso.part	#NAO SEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEI
+arq_log=$dir_riso/riso.log	#Arquivo de log
 
 #Função de Log
 log(){
