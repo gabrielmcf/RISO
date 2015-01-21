@@ -1,0 +1,3 @@
+system.method.set_key=event.download.finished,quit,"execute=/usr/riso/quitRTorrent.sh,$d.get_base_path="
+set_max_file_size=374877906944
+max_memory_usage=3500M
