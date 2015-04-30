@@ -222,70 +222,6 @@ instala_linux() {
   
 }
 
-#Baixa imagens do Linux e do Windows.
-baixa_imagens() {
-	log "Iniciando download do Linux e do Windows."
-	log "Conectando ao servidor."
-	echo "Conectando ao servidor..."
-	carrega_variaveis || return 1
-
-    #Vefifica se imagem do windows já é a mais recente
-	sizelocwin="0"
-	[ -e ${img_win} ] && sizelocwin=$(du ${img_win} | cut -f1 )
-	if [ "$sizelocwin" = "$tamwindows" ]; then
-        dialog \
-        --title 'Atenção' \
-        --ok-label 'OK' \
-        --msgbox '\nA imagem do Windows no computador já é a mais recente.' \
-        7 50
-	log "ERRO: Imagem do Windows já é a mais recente."
-        return 4
-    fi
-
-    #Vefifica se imagem do linux já é a mais recente
-	sizeloclin="0"
-	[ -e ${img_lin} ] && sizeloclin=$(du ${img_lin} | cut -f1)
-	if [ "$sizeloclin" = "$tamlinux" ]; then
-        dialog \
-        --title 'Atenção' \
-        --ok-label 'OK' \
-        --msgbox '\n A imagem do Linux no computador já é a mais recente.' \
-        7 50
-	log "ERRO: Imagem do Linux já é a mais recente."
-        return 4
-    fi
-
-	#Deleta imagens antigas.
-	log "Iniciando remoção da imagem antiga do Windows."
-	echo "Removendo imagem antiga do Windows..."
-	rm -f $img_win
-	rm -f $tor_win
-	log "Fim da remoção da imagem antiga do Windows."
-	log "Inicio da remoção da imagem antiga do Linux."
-	echo "Removendo imagem antiga do Linux..."
-	rm -f $img_lin
-	rm -f $tor_lin
-	log "Fim da remoção da imagem antiga do Linux."
-	
-	#Inicia download das imagens em terminal virtual.
-	log "Iniciando download dos torrent do Windows."
-	(scp -o StrictHostKeyChecking=no root@${servidor}:${tor_win} ${tor_win} && log "Torrent do Windows baixado com sucesso.") || log "ERRO: Torrent do Windows não foi baixado."
-	log "Iniciando download do torrent do Linux."
-	(scp -o StrictHostKeyChecking=no root@${servidor}:${tor_lin} ${tor_lin} && log "Torrent do Linux baixado com sucesso.") || log "ERRO: Torrent do Linux não foi baixado."
-	cd ${dir_img}
-	log "Iniciando download das imagens do Windows e do Linux."
-	rtorrent ${tor_win} ${tor_lin} # modificacao retirado o parametrio -d para que a tranferencia seja mostrada, nao e usado o restante do cogigo da funçao
-
-        #Se usuario cancelar volta para menu.
-        trap "killall rtorrent; clear; exit" 2 15
-
-        echo "Download do Windows finalizado."
-        sleep 3
-        reset
-
-
-}
-
 #Baixa imagem do Windows.
 baixa_imagem_windows() {
 	log "Iniciando download do Windows."
@@ -546,7 +482,7 @@ menu_baixa_imagens() {
 	case $opcao in
 		'"Windows"') baixa_imagem_windows && instala_windows;;
 		'"Linux"') baixa_imagem_linux && instala_linux;;
-		'"Windows" "Linux"') baixa_imagens && instala;;
+		'"Windows" "Linux"') baixa_imagem_linux && baixa_imagem_windows && instala;;
 	esac
 	
 }
