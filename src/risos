@@ -9,8 +9,8 @@ img_rec=$dir_img/rec.tar	#arquivo da imagem da recuperacao (ubuntu_server)
 tor_win=$img_win.torrent	#torrent da imagem do windows
 tor_lin=$img_lin.torrent	#torrent da imagem do linux
 riso_service=/etc/avahi/services/riso.service	#servico do servidor de imagem
-tab_part=$dir_img/tab_part	#NAO SEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEI
-riso_part=$dir_riso/riso.part	#NAO SEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEI
+tab_part=$dir_img/tab_part	#cfdisck -d ; salva tabela de partição no servidor para poder instalar a recuperaçao no cliente
+riso_part=$dir_riso/riso.part	#salva partiçães dos respectivos sistemas	
 arq_log=$dir_riso/riso.log	#Arquivo de log
 
 #Função de Log
@@ -22,8 +22,8 @@ log(){
 #Carrega variaveis do arquivo riso.service para variáveis do sistema.
 carrega_variaveis() {
 
-    avahi_saida=`avahi-browse -rtp _RISO._tcp | grep '='`
-    servidor=`cut -d ';' -f8 <<< ${avahi_saida}` #ip do servidor.
+    avahi_saida=`avahi-browse -rtp _DECOM_RISO._tcp | grep '='`
+    servidor=`ip route | grep src | cut -d ' ' -f12` #modificacao ip do servidor.
     if [ -z $servidor ]; then
         dialog \
         --title 'Atencao' \
@@ -148,10 +148,16 @@ cria_torrent_linux() {
 	    #Cria o torrent
 	    btmakemetafile.bittorrent ${img_lin} http://${servidor}:6969/announce 2> /dev/null
 	
-	    #Escreve o tamanho da imagem no riso.service
-	    tam=`du ${img_lin} | cut -f1`
+	    #Atualiza o IP do servidor no riso.service
+        servidor_antigo=`cat ${riso_service} | grep Servidor= | cut -d '<' -f2 | cut -d '>' -f2`    # modificacao pega ip antigo do arquivo riso.sevice
+        sed "s/$servidor_antigo*/Servidor=${servidor}/" < ${riso_service} > ${riso_service}.tmp #
+        mv ${riso_service}.tmp ${riso_service}
+        
+        #Escreve o tamanho da imagem no riso.service
+	    tam=`du ${img_lin} | cut -f1` 
 	    sed "s/tamlinux=[0-9]*/tamlinux=${tam}/" < ${riso_service} > ${riso_service}.tmp
 	    mv ${riso_service}.tmp ${riso_service}
+
 	    log "Arquivo torrent do Linux criado."
 	else
         dialog \
@@ -206,10 +212,16 @@ cria_torrent_windows() {
 	    log "Criando arquivo torrent do windows."
         btmakemetafile.bittorrent ${img_win} http://${servidor}:6969/announce 2> /dev/null
 
+	    #Atualiza o IP do servidor no riso.service
+        servidor_antigo=`cat ${riso_service} | grep Servidor= | cut -d '<' -f2 | cut -d '>' -f2`    # modificacao pega ip antigo do arquivo riso.sevice
+        sed "s/$servidor_antigo*/Servidor=${servidor}/" < ${riso_service} > ${riso_service}.tmp #
+        mv ${riso_service}.tmp ${riso_service}
+        
         #Escreve o tamanho da imagem no riso.service
 	    tam=`du ${img_win} | cut -f1`
         sed "s/tamwindows=[0-9]*/tamwindows=${tam}/" < ${riso_service} > ${riso_service}.tmp
 	    mv ${riso_service}.tmp ${riso_service}
+
 	    log "Arquivo torrent do windows criado."
     else
         dialog \
@@ -294,6 +306,7 @@ creditos() {
 		         Marcio J. Menezes Jr.           \n
 		    Gabriel Machado de Castro Fonseca    \n
 		      André Luiz Silveira Herculano      \n
+		       Gilmar Pereira de Alcantara       \n
 		                                         \n
 		           www.dgo.cefetmg.br            \n
 		                                         \n'\
@@ -1011,7 +1024,7 @@ menu() {
 		dialog --stdout                         \
 		--ok-label 'Confirmar'                  \
 		--cancel-label 'Sair'                   \
-		--title 'RISOS - 0.5'                   \
+		--title 'RISOS - 0.8'                   \
 		--menu 'Escolha o que voce quer fazer:' \
 			0 0 0                               \
 			1 'Iniciar servidor'                \
