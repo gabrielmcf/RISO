@@ -1,7 +1,7 @@
-O repositório de desenvolvimento está atualmente em https://github.com/decom/RISO
+# O repositório de desenvolvimento está atualmente em https://github.com/decom/RISO
 
 
-RISO-0.8
+# RISO-0.8
 Recuperação de Imagem de Sistema Operacional
 
 O RISO (Recuperação de Imagem de Sistema Operacional) é um sistema que recupera imagens em múltiplas máquinas simultaneamente. Para tal ele utiliza a tecnologia de Torrent pra transmitir as imagens de um servidor para os terminais.
